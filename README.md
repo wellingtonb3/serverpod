@@ -66,6 +66,14 @@ three-unit clusters. When a vehicle arrives at an incident, its status changes
 to **On Scene**.
 Use **Concluir** beside that unit in the dashboard when the incident is resolved;
 the incident closes and the unit visibly returns to its saved patrol position.
+
+Incident descriptions are separate from incident locations. In the dashboard,
+search for a São Paulo street address to resolve it to coordinates through the
+OpenStreetMap Nominatim service, select the correct match, and then dispatch.
+The selected incident location is shown on the map. The lookup sends the address
+field (not the incident description) to Nominatim; manual coordinates can also
+be entered. The public geocoder is intended for low-volume demonstrations and
+is subject to OpenStreetMap's usage policy.
 It becomes **Available** again after arriving there.
 
 ---

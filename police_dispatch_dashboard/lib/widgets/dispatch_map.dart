@@ -31,6 +31,7 @@ class _DispatchMapState extends ConsumerState<DispatchMap> {
     final vehicleStream = ref.watch(vehicleStreamProvider);
     final sectorCoverage = ref.watch(sectorCoverageProvider);
     final sectorsAsync = ref.watch(sectorsProvider);
+    final incidentsAsync = ref.watch(activeIncidentsProvider);
 
     return Stack(
       children: [
@@ -66,6 +67,48 @@ class _DispatchMapState extends ConsumerState<DispatchMap> {
             vehicleStream.when(
               data: (vehicles) => MarkerLayer(
                 markers: vehicles.map(_buildVehicleMarker).toList(),
+              ),
+              loading: () => const MarkerLayer(markers: []),
+              error: (_, __) => const MarkerLayer(markers: []),
+            ),
+            incidentsAsync.when(
+              data: (incidents) => MarkerLayer(
+                markers: incidents
+                    .map(
+                      (incident) => Marker(
+                        point: LatLng(incident.latitude, incident.longitude),
+                        width: 64,
+                        height: 58,
+                        child: Column(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 5,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFB71C1C),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                'CALL #${incident.id ?? ''}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            const Icon(
+                              Icons.location_on,
+                              color: Color(0xFFFF5252),
+                              size: 30,
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                    .toList(),
               ),
               loading: () => const MarkerLayer(markers: []),
               error: (_, __) => const MarkerLayer(markers: []),

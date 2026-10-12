@@ -407,6 +407,7 @@ class _VehicleListTileState extends ConsumerState<_VehicleListTile> {
     try {
       await ref.read(clientProvider).dispatch.completeIncident(vehicleId);
       if (!mounted) return;
+      ref.invalidate(activeIncidentsProvider);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Ocorrência encerrada. Unidade retornando à patrulha.'),

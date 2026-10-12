@@ -25,6 +25,12 @@ final sectorsProvider = FutureProvider<List<Sector>>((ref) async {
   return client.dispatch.getAllSectors();
 });
 
+/// Provides incidents currently assigned to a patrol unit.
+final activeIncidentsProvider = FutureProvider<List<Incident>>((ref) async {
+  final client = ref.watch(clientProvider);
+  return client.dispatch.getIncidentsByStatus('dispatched');
+});
+
 /// Tracks the currently selected incident form state.
 /// Null means no incident creation is in progress.
 final pendingIncidentProvider = StateProvider<PendingIncident?>((ref) => null);
