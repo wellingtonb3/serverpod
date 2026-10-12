@@ -1,0 +1,22 @@
+### Vehicle model
+### Represents a police patrol vehicle with real-time GPS position and status.
+
+class: Vehicle
+table: vehicle
+fields:
+  code: String               # Patrol unit code, e.g. "RP-01"
+  latitude: double           # Current GPS latitude
+  longitude: double          # Current GPS longitude
+  status: String             # 'available' | 'dispatched' | 'on_scene' | 'returning' | 'repositioning'
+  currentSector: String      # Sector ID the vehicle is currently covering
+  targetLatitude: double?    # Destination latitude when dispatched
+  targetLongitude: double?   # Destination longitude when dispatched
+  patrolLatitude: double?    # Position to return to after completing an incident
+  patrolLongitude: double?   # Position to return to after completing an incident
+  assignedIncidentId: int?   # FK to the incident being attended
+
+indexes:
+  vehicle_status_idx:
+    fields: status
+  vehicle_sector_idx:
+    fields: currentSector

@@ -1,0 +1,12 @@
+name: police_dispatch_client
+version: 1.0.0
+publish_to: none
+description: >
+  Generated client library for the Police Dispatch Server.
+  Provides strongly-typed classes for all models and endpoint calls.
+
+environment:
+  sdk: ">=3.12.2 <4.0.0"
+
+dependencies:
+  serverpod_client: 4.0.4

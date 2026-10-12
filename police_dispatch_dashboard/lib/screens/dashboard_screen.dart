@@ -1,0 +1,163 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../providers/dispatch_providers.dart';
+import '../widgets/dispatch_map.dart';
+import '../widgets/stats_panel.dart';
+import '../widgets/incident_form.dart';
+
+/// Main dashboard screen — the primary view of the application.
+///
+/// Layout (responsive):
+/// ┌─────────────────────────────┬──────────────────┐
+/// │                             │  Stats Panel     │
+/// │   Live Dispatch Map         │  (vehicle list,  │
+/// │   (flutter_map / OSM)       │   sector cover.) │
+/// │                             │                  │
+/// └─────────────────────────────┴──────────────────┘
+///
+/// On screens narrower than 800 dp the stats panel moves below the map.
+class DashboardScreen extends ConsumerWidget {
+  const DashboardScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final width = MediaQuery.of(context).size.width;
+    final isWide = width >= 800;
+
+    return Scaffold(
+      backgroundColor: const Color(0xFF0D0D1A),
+      appBar: _buildAppBar(context, ref),
+      body: isWide ? _wideLayout() : _narrowLayout(),
+    );
+  }
+
+  // ─── App bar ───────────────────────────────────────────────────────────────
+
+  PreferredSizeWidget _buildAppBar(BuildContext context, WidgetRef ref) {
+    final isCompact = MediaQuery.sizeOf(context).width < 600;
+    return AppBar(
+      backgroundColor: const Color(0xFF0A0A1A),
+      elevation: 0,
+      title: Row(
+        children: [
+          const Icon(Icons.local_police, color: Color(0xFF00B0FF), size: 24),
+          const SizedBox(width: 10),
+          Flexible(
+            child: Text(
+              isCompact ? 'Police Dispatch' : 'Police Dispatch Dashboard',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const Spacer(),
+          _ConnectionIndicator(),
+        ],
+      ),
+      actions: [
+        Padding(
+          padding: const EdgeInsets.only(right: 12),
+          child: _reportIncidentButton(context),
+        ),
+      ],
+    );
+  }
+
+  // ─── Layout variants ───────────────────────────────────────────────────────
+
+  Widget _wideLayout() {
+    return Row(
+      children: [
+        // Map takes ~65% of the width
+        const Expanded(flex: 65, child: DispatchMap()),
+        // Vertical divider
+        Container(width: 1, color: const Color(0xFF2A2A4A)),
+        // Stats panel takes ~35%
+        const Expanded(flex: 35, child: StatsPanel()),
+      ],
+    );
+  }
+
+  Widget _narrowLayout() {
+    return const Column(
+      children: [
+        Expanded(flex: 55, child: DispatchMap()),
+        Divider(height: 1, color: Color(0xFF2A2A4A)),
+        Expanded(flex: 45, child: StatsPanel()),
+      ],
+    );
+  }
+
+  // ─── FAB — report incident ─────────────────────────────────────────────────
+
+  Widget _reportIncidentButton(BuildContext context) {
+    if (MediaQuery.sizeOf(context).width < 600) {
+      return IconButton.filled(
+        tooltip: 'Report Incident',
+        onPressed: () => _showIncidentForm(context),
+        style: IconButton.styleFrom(
+          backgroundColor: const Color(0xFFB71C1C),
+          foregroundColor: Colors.white,
+        ),
+        icon: const Icon(Icons.report_problem),
+      );
+    }
+
+    return FilledButton.icon(
+      style: FilledButton.styleFrom(
+        backgroundColor: const Color(0xFFB71C1C),
+        foregroundColor: Colors.white,
+      ),
+      onPressed: () => _showIncidentForm(context),
+      icon: const Icon(Icons.report_problem),
+      label: const Text('Report Incident'),
+    );
+  }
+
+  void _showIncidentForm(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const IncidentForm(),
+    );
+  }
+}
+
+// ─── Connection indicator ──────────────────────────────────────────────────
+
+/// Small dot that shows green when the server stream is alive, red otherwise.
+class _ConnectionIndicator extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final stream = ref.watch(vehicleStreamProvider);
+    final color = stream.when(
+      data: (_) => const Color(0xFF00E676),
+      loading: () => const Color(0xFFFFD740),
+      error: (_, __) => const Color(0xFFFF5252),
+    );
+    final label = stream.when(
+      data: (_) => 'Live',
+      loading: () => 'Connecting',
+      error: (_, __) => 'Disconnected',
+    );
+
+    return Row(
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 6),
+        Text(label, style: TextStyle(color: color, fontSize: 12)),
+        const SizedBox(width: 16),
+      ],
+    );
+  }
+}

@@ -1,0 +1,9 @@
+### DispatchResult model
+### Returned by the dispatch endpoint to describe the result of a dispatch request.
+
+class: DispatchResult
+fields:
+  success: bool
+  message: String
+  assignedVehicleCode: String?
+  estimatedArrivalSeconds: int?

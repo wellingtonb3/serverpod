@@ -1,0 +1,33 @@
+# Development configuration for the Police Dispatch Server
+# Copy this file to config/development.yaml and fill in your local values.
+
+apiServer:
+  port: 8080
+  publicHost: localhost
+  publicPort: 8080
+  publicScheme: http
+
+insightsServer:
+  port: 8081
+  publicHost: localhost
+  publicPort: 8081
+  publicScheme: http
+
+webServer:
+  port: 8082
+  publicHost: localhost
+  publicPort: 8082
+  publicScheme: http
+
+database:
+  host: localhost
+  port: 5433
+  name: police_dispatch
+  user: postgres
+  password: replace-with-local-postgres-password
+
+redis:
+  enabled: true
+  host: localhost
+  port: 6379
+  password: replace-with-local-redis-password

@@ -1,0 +1,17 @@
+### Sector model
+### Represents a geographic patrol zone within the city.
+
+class: Sector
+table: sector
+fields:
+  name: String               # Human-readable name, e.g. "Downtown"
+  sectorCode: String         # Unique identifier code, e.g. "ZONE_CENTRAL"
+  centerLatitude: double     # Center point latitude (for coverage calculations)
+  centerLongitude: double    # Center point longitude
+  minimumVehicles: int       # Minimum required patrol vehicles at all times
+  boundaryGeoJson: String    # GeoJSON polygon string for map rendering
+
+indexes:
+  sector_code_idx:
+    fields: sectorCode
+    unique: true

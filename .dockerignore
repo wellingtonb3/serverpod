@@ -1,0 +1,11 @@
+.git
+.env
+.env.*
+**/config/passwords.yaml
+**/.dart_tool/
+**/.pub-cache/
+**/build/
+**/coverage/
+**/.idea/
+**/*.iml
+file.jpe

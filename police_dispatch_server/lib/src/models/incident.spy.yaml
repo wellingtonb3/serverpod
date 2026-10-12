@@ -1,0 +1,20 @@
+### Incident model
+### Represents a police call/incident requiring a patrol vehicle.
+
+class: Incident
+table: incident
+fields:
+  description: String        # Free-text description of the incident
+  latitude: double           # GPS latitude of the incident location
+  longitude: double          # GPS longitude of the incident location
+  status: String             # 'open' | 'dispatched' | 'closed'
+  sectorId: String           # Sector where the incident occurred
+  assignedVehicleId: int?    # FK to the vehicle assigned to this incident
+  createdAt: DateTime        # Timestamp when the incident was created
+  closedAt: DateTime?        # Timestamp when the incident was resolved
+
+indexes:
+  incident_status_idx:
+    fields: status
+  incident_sector_idx:
+    fields: sectorId

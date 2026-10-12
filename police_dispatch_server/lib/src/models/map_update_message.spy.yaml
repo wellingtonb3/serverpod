@@ -1,0 +1,7 @@
+### MapUpdateMessage model
+### Lightweight message broadcast over the 'map-update' channel.
+### Used to notify all connected dashboards that vehicle state has changed.
+
+class: MapUpdateMessage
+fields:
+  reason: String   # e.g. 'dispatch', 'simulation-tick', 'vehicle-available'

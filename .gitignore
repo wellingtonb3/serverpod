@@ -1,0 +1,22 @@
+# Local credentials and environment overrides
+.env
+.env.*
+!.env.example
+police_dispatch_server/config/passwords.yaml
+
+# Dart and Flutter generated files
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.pub-cache/
+**/build/
+**/coverage/
+
+# IDE and operating-system files
+**/.idea/
+**/*.iml
+.DS_Store
+Thumbs.db
+
+# Local attachment
+/file.jpe

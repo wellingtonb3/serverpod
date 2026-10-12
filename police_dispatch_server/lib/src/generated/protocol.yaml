@@ -1,0 +1,7 @@
+dispatch:
+  - monitorVehicles:
+  - monitorSectorCoverage:
+  - requestDispatch:
+  - getAllSectors:
+  - getIncidentsByStatus:
+  - completeIncident:
