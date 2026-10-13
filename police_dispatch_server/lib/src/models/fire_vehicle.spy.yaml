@@ -1,0 +1,19 @@
+### A fire-response vehicle stationed at a mapped São Paulo fire station.
+
+class: FireVehicle
+table: fire_vehicle
+fields:
+  code: String
+  stationCode: String
+  latitude: double
+  longitude: double
+  status: String
+  targetLatitude: double?
+  targetLongitude: double?
+  assignedIncidentId: int?
+
+indexes:
+  fire_vehicle_status_idx:
+    fields: status
+  fire_vehicle_station_idx:
+    fields: stationCode

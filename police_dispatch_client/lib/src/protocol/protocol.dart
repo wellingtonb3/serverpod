@@ -11,16 +11,24 @@
 // ignore_for_file: dead_code, unnecessary_type_check
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
+import 'package:police_dispatch_client/src/protocol/fire_station.dart'
+    as _iu994c15;
+import 'package:police_dispatch_client/src/protocol/fire_vehicle.dart'
+    as _iks8j07s;
 import 'package:police_dispatch_client/src/protocol/incident.dart' as _i10daq7i;
 import 'package:police_dispatch_client/src/protocol/sector.dart' as _ijaqrtkl;
 import 'package:police_dispatch_client/src/protocol/vehicle.dart' as _iadov0ic;
 import 'package:serverpod_client/serverpod_client.dart' as _isc;
 import 'dispatch_result.dart' as _ifw1qgcx;
+import 'fire_station.dart' as _i7g8p8gq;
+import 'fire_vehicle.dart' as _ij7uetzm;
 import 'incident.dart' as _iy4wsyyx;
 import 'map_update_message.dart' as _iic1uq60;
 import 'sector.dart' as _i0xllqjf;
 import 'vehicle.dart' as _imszitsy;
 export 'dispatch_result.dart';
+export 'fire_station.dart';
+export 'fire_vehicle.dart';
 export 'incident.dart';
 export 'map_update_message.dart';
 export 'sector.dart';
@@ -64,6 +72,12 @@ class Protocol extends _isc.SerializationManager {
     if (t == _ifw1qgcx.DispatchResult) {
       return _ifw1qgcx.DispatchResult.fromJson(data) as T;
     }
+    if (t == _i7g8p8gq.FireStation) {
+      return _i7g8p8gq.FireStation.fromJson(data) as T;
+    }
+    if (t == _ij7uetzm.FireVehicle) {
+      return _ij7uetzm.FireVehicle.fromJson(data) as T;
+    }
     if (t == _iy4wsyyx.Incident) {
       return _iy4wsyyx.Incident.fromJson(data) as T;
     }
@@ -79,6 +93,12 @@ class Protocol extends _isc.SerializationManager {
     if (t == _isc.getType<_ifw1qgcx.DispatchResult?>()) {
       return (data != null ? _ifw1qgcx.DispatchResult.fromJson(data) : null)
           as T;
+    }
+    if (t == _isc.getType<_i7g8p8gq.FireStation?>()) {
+      return (data != null ? _i7g8p8gq.FireStation.fromJson(data) : null) as T;
+    }
+    if (t == _isc.getType<_ij7uetzm.FireVehicle?>()) {
+      return (data != null ? _ij7uetzm.FireVehicle.fromJson(data) : null) as T;
     }
     if (t == _isc.getType<_iy4wsyyx.Incident?>()) {
       return (data != null ? _iy4wsyyx.Incident.fromJson(data) : null) as T;
@@ -98,6 +118,11 @@ class Protocol extends _isc.SerializationManager {
           .map((e) => deserialize<_iadov0ic.Vehicle>(e))
           .toList() as T;
     }
+    if (t == List<_iks8j07s.FireVehicle>) {
+      return (data as List)
+          .map((e) => deserialize<_iks8j07s.FireVehicle>(e))
+          .toList() as T;
+    }
     if (t == Map<String, int>) {
       return (data as Map).map(
           (k, v) => MapEntry(deserialize<String>(k), deserialize<int>(v))) as T;
@@ -105,6 +130,11 @@ class Protocol extends _isc.SerializationManager {
     if (t == List<_ijaqrtkl.Sector>) {
       return (data as List)
           .map((e) => deserialize<_ijaqrtkl.Sector>(e))
+          .toList() as T;
+    }
+    if (t == List<_iu994c15.FireStation>) {
+      return (data as List)
+          .map((e) => deserialize<_iu994c15.FireStation>(e))
           .toList() as T;
     }
     if (t == List<_i10daq7i.Incident>) {
@@ -118,6 +148,8 @@ class Protocol extends _isc.SerializationManager {
   static String? getClassNameForType(Type type) {
     return switch (type) {
       _ifw1qgcx.DispatchResult => 'DispatchResult',
+      _i7g8p8gq.FireStation => 'FireStation',
+      _ij7uetzm.FireVehicle => 'FireVehicle',
       _iy4wsyyx.Incident => 'Incident',
       _iic1uq60.MapUpdateMessage => 'MapUpdateMessage',
       _i0xllqjf.Sector => 'Sector',
@@ -139,6 +171,10 @@ class Protocol extends _isc.SerializationManager {
     switch (data) {
       case _ifw1qgcx.DispatchResult():
         return 'DispatchResult';
+      case _i7g8p8gq.FireStation():
+        return 'FireStation';
+      case _ij7uetzm.FireVehicle():
+        return 'FireVehicle';
       case _iy4wsyyx.Incident():
         return 'Incident';
       case _iic1uq60.MapUpdateMessage():
@@ -150,6 +186,9 @@ class Protocol extends _isc.SerializationManager {
     }
     if (data is List<_iadov0ic.Vehicle>) {
       return 'List<Vehicle>';
+    }
+    if (data is List<_iks8j07s.FireVehicle>) {
+      return 'List<FireVehicle>';
     }
     if (data is Map<String, int>) {
       return 'Map<String,int>';
@@ -166,6 +205,12 @@ class Protocol extends _isc.SerializationManager {
     if (dataClassName == 'DispatchResult') {
       return deserialize<_ifw1qgcx.DispatchResult>(data['data']);
     }
+    if (dataClassName == 'FireStation') {
+      return deserialize<_i7g8p8gq.FireStation>(data['data']);
+    }
+    if (dataClassName == 'FireVehicle') {
+      return deserialize<_ij7uetzm.FireVehicle>(data['data']);
+    }
     if (dataClassName == 'Incident') {
       return deserialize<_iy4wsyyx.Incident>(data['data']);
     }
@@ -180,6 +225,9 @@ class Protocol extends _isc.SerializationManager {
     }
     if (dataClassName == 'List<Vehicle>') {
       return deserialize<List<_iadov0ic.Vehicle>>(data['data']);
+    }
+    if (dataClassName == 'List<FireVehicle>') {
+      return deserialize<List<_iks8j07s.FireVehicle>>(data['data']);
     }
     if (dataClassName == 'Map<String,int>') {
       return deserialize<Map<String, int>>(data['data']);

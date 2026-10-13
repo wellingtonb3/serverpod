@@ -14,6 +14,10 @@ import 'dart:async' as _ida;
 import 'package:http/http.dart' as _i85jenna;
 import 'package:police_dispatch_client/src/protocol/dispatch_result.dart'
     as _it223q1i;
+import 'package:police_dispatch_client/src/protocol/fire_station.dart'
+    as _iu994c15;
+import 'package:police_dispatch_client/src/protocol/fire_vehicle.dart'
+    as _iks8j07s;
 import 'package:police_dispatch_client/src/protocol/incident.dart' as _i10daq7i;
 import 'package:police_dispatch_client/src/protocol/sector.dart' as _ijaqrtkl;
 import 'package:police_dispatch_client/src/protocol/vehicle.dart' as _iadov0ic;
@@ -52,6 +56,16 @@ class EndpointDispatch extends _isc.EndpointRef {
         {},
       );
 
+  _ida.Stream<List<_iks8j07s.FireVehicle>> monitorFireVehicles() =>
+      caller.callStreamingServerEndpoint<
+          _ida.Stream<List<_iks8j07s.FireVehicle>>,
+          List<_iks8j07s.FireVehicle>>(
+        'dispatch',
+        'monitorFireVehicles',
+        {},
+        {},
+      );
+
   /// Streams sector coverage data (sectorCode → availableVehicleCount).
   /// The dashboard uses this to colour-code sector polygons on the map.
   _ida.Stream<Map<String, int>> monitorSectorCoverage() =>
@@ -63,19 +77,8 @@ class EndpointDispatch extends _isc.EndpointRef {
         {},
       );
 
-  /// Executes the intelligent dispatch algorithm for a new [incident].
-  ///
-  /// Algorithm (three-phase validation):
-  ///
-  ///   Phase 1 — Coverage-reserve ranking:
-  ///     Prefer the sector that will retain the largest available surplus
-  ///     above its minimum coverage after dispatch.
-  ///
-  ///   Phase 2 — Proximity tie-break:
-  ///     Among equally covered sectors, choose the closest vehicle.
-  ///
-  ///   Phase 3 — Emergency fallback:
-  ///     If no sector has a safe surplus, dispatch the closest available unit.
+  /// Dispatches the unit whose removal causes the smallest geographic coverage
+  /// loss, then repositions the remaining fleet over the municipality.
   ///
   /// Returns a [DispatchResult] with success status and ETA.
   _ida.Future<_it223q1i.DispatchResult> requestDispatch(
@@ -91,6 +94,13 @@ class EndpointDispatch extends _isc.EndpointRef {
       caller.callServerEndpoint<List<_ijaqrtkl.Sector>>(
         'dispatch',
         'getAllSectors',
+        {},
+      );
+
+  _ida.Future<List<_iu994c15.FireStation>> getAllFireStations() =>
+      caller.callServerEndpoint<List<_iu994c15.FireStation>>(
+        'dispatch',
+        'getAllFireStations',
         {},
       );
 
@@ -110,6 +120,13 @@ class EndpointDispatch extends _isc.EndpointRef {
         'dispatch',
         'completeIncident',
         {'vehicleId': vehicleId},
+      );
+
+  _ida.Future<void> completeFireIncident(int fireVehicleId) =>
+      caller.callServerEndpoint<void>(
+        'dispatch',
+        'completeFireIncident',
+        {'fireVehicleId': fireVehicleId},
       );
 }
 

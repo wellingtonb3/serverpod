@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:police_dispatch_client/police_dispatch_client.dart';
 
 import '../providers/dispatch_providers.dart';
+import '../services/dispatch_alert_service.dart';
 import '../widgets/dispatch_map.dart';
 import '../widgets/stats_panel.dart';
 import '../widgets/incident_form.dart';
+import '../widgets/incident_history.dart';
 
 /// Main dashboard screen — the primary view of the application.
 ///
@@ -22,6 +25,17 @@ class DashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen(vehicleStreamProvider, (previous, next) {
+      DispatchAlertService.updatePoliceDispatchState(
+        _hasDispatchedUnit(next.valueOrNull),
+      );
+    });
+    ref.listen(fireVehicleStreamProvider, (previous, next) {
+      DispatchAlertService.updateFireDispatchState(
+        _hasDispatchedUnit(next.valueOrNull),
+      );
+    });
+
     final width = MediaQuery.of(context).size.width;
     final isWide = width >= 800;
 
@@ -32,23 +46,37 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
+  bool _hasDispatchedUnit<T extends Object>(List<T>? units) {
+    return units?.any((unit) => _unitStatus(unit) == 'dispatched') ?? false;
+  }
+
+  String _unitStatus(Object unit) {
+    if (unit is Vehicle) return unit.status;
+    if (unit is FireVehicle) return unit.status;
+    return '';
+  }
+
   // ─── App bar ───────────────────────────────────────────────────────────────
 
   PreferredSizeWidget _buildAppBar(BuildContext context, WidgetRef ref) {
-    final isCompact = MediaQuery.sizeOf(context).width < 600;
     return AppBar(
       backgroundColor: const Color(0xFF0A0A1A),
       elevation: 0,
       title: Row(
         children: [
-          const Icon(Icons.local_police, color: Color(0xFF00B0FF), size: 24),
-          const SizedBox(width: 10),
-          Flexible(
+          Image.asset(
+            'assets/images/titan_logo.jpg',
+            width: 76,
+            height: 40,
+            fit: BoxFit.contain,
+          ),
+          const SizedBox(width: 8),
+          const Flexible(
             child: Text(
-              isCompact ? 'Police Dispatch' : 'Police Dispatch Dashboard',
+              'Titan System',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 color: Colors.white,
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
@@ -56,10 +84,14 @@ class DashboardScreen extends ConsumerWidget {
             ),
           ),
           const Spacer(),
-          _ConnectionIndicator(),
+          const _ConnectionIndicator(),
         ],
       ),
       actions: [
+        Padding(
+          padding: const EdgeInsets.only(right: 8),
+          child: _historyButton(context),
+        ),
         Padding(
           padding: const EdgeInsets.only(right: 12),
           child: _reportIncidentButton(context),
@@ -119,6 +151,19 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
+  Widget _historyButton(BuildContext context) {
+    return IconButton.filled(
+      tooltip: 'Dispatch History',
+      onPressed: () =>
+          showDialog(context: context, builder: (_) => const IncidentHistory()),
+      style: IconButton.styleFrom(
+        backgroundColor: const Color(0xFF1565C0),
+        foregroundColor: Colors.white,
+      ),
+      icon: const Icon(Icons.history),
+    );
+  }
+
   void _showIncidentForm(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -133,6 +178,8 @@ class DashboardScreen extends ConsumerWidget {
 
 /// Small dot that shows green when the server stream is alive, red otherwise.
 class _ConnectionIndicator extends ConsumerWidget {
+  const _ConnectionIndicator();
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final stream = ref.watch(vehicleStreamProvider);

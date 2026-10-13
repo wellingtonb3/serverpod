@@ -17,74 +17,160 @@ class StatsPanel extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final vehicleStream = ref.watch(vehicleStreamProvider);
+    final fireVehicleStream = ref.watch(fireVehicleStreamProvider);
     final sectorsAsync = ref.watch(sectorsProvider);
     final sectorCoverage = ref.watch(sectorCoverageProvider);
 
     return Container(
       color: const Color(0xFF12122A),
       child: vehicleStream.when(
-        data: (vehicles) => Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Summary counters ─────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: _SummaryRow(vehicles: vehicles),
-            ),
-            const Divider(height: 1, color: Color(0xFF2A2A4A)),
-
-            // ── Sector coverage ───────────────────────────────────────────
-            const Padding(
-              padding: EdgeInsets.fromLTRB(16, 12, 16, 4),
-              child: Text(
-                'SECTOR COVERAGE',
-                style: TextStyle(
-                  color: Colors.white38,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.2,
+        data: (vehicles) {
+          final orderedPoliceVehicles = _sortIncidentUnits(
+            vehicles,
+            (vehicle) => vehicle.status == 'on_scene',
+            (vehicle) => vehicle.status == 'dispatched',
+            (vehicle) => vehicle.code,
+          );
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                flex: 5,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const _PanelSectionTitle(
+                        title: 'POLICE PATROL STATUS',
+                        color: Color(0xFF00B0FF),
+                      ),
+                      _StatusSummaryRow.fromStatuses(vehicles),
+                      const SizedBox(height: 10),
+                      const _PanelSectionTitle(
+                        title: 'FIRE UNIT STATUS',
+                        color: Color(0xFFFF8A65),
+                      ),
+                      fireVehicleStream.when(
+                        data: (fireVehicles) =>
+                            _StatusSummaryRow.fromFireStatuses(fireVehicles),
+                        loading: () => const SizedBox(
+                          height: 52,
+                          child: Center(child: CircularProgressIndicator()),
+                        ),
+                        error: (error, _) => Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: Text(
+                            'Could not load fire unit status: $error',
+                            style: const TextStyle(
+                              color: Color(0xFFFF5252),
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const Padding(
+                        padding: EdgeInsets.only(top: 8),
+                        child: Divider(height: 1, color: Color(0xFF2A2A4A)),
+                      ),
+                      const Padding(
+                        padding: EdgeInsets.only(top: 8, bottom: 4),
+                        child: _PanelSectionTitle(
+                          title: 'SECTOR COVERAGE',
+                          color: Color(0xFFB388FF),
+                        ),
+                      ),
+                      sectorsAsync.when(
+                        data: (sectors) => _SectorCoverageList(
+                          sectors: sectors,
+                          coverage: sectorCoverage.valueOrNull ?? {},
+                        ),
+                        loading: () =>
+                            const Center(child: CircularProgressIndicator()),
+                        error: (error, _) => Text(
+                          'Error: $error',
+                          style: const TextStyle(
+                            color: Colors.red,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            sectorsAsync.when(
-              data: (sectors) => _SectorCoverageList(
-                sectors: sectors,
-                coverage: sectorCoverage.valueOrNull ?? {},
-              ),
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  'Error: $e',
-                  style: const TextStyle(color: Colors.red, fontSize: 12),
+              const Divider(height: 1, color: Color(0xFF2A2A4A)),
+              const Padding(
+                padding: EdgeInsets.fromLTRB(12, 8, 12, 4),
+                child: _PanelSectionTitle(
+                  title: 'ALL UNITS',
+                  color: Colors.white70,
                 ),
               ),
-            ),
-
-            const Divider(height: 1, color: Color(0xFF2A2A4A)),
-
-            // ── Vehicle list ──────────────────────────────────────────────
-            const Padding(
-              padding: EdgeInsets.fromLTRB(16, 12, 16, 4),
-              child: Text(
-                'ALL UNITS',
-                style: TextStyle(
-                  color: Colors.white38,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.2,
+              Expanded(
+                flex: 5,
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: _UnitGroup(
+                        title: 'POLICE PATROL UNITS',
+                        color: const Color(0xFF00B0FF),
+                        child: ListView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          itemCount: orderedPoliceVehicles.length,
+                          itemBuilder: (context, index) => _VehicleListTile(
+                            vehicle: orderedPoliceVehicles[index],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const Divider(height: 1, color: Color(0xFF2A2A4A)),
+                    Expanded(
+                      child: fireVehicleStream.when(
+                        data: (fireVehicles) {
+                          final orderedFireVehicles = _sortIncidentUnits(
+                            fireVehicles,
+                            (vehicle) => vehicle.status == 'on_scene',
+                            (vehicle) => vehicle.status == 'dispatched',
+                            (vehicle) => vehicle.code,
+                          );
+                          return _UnitGroup(
+                            title: 'FIRE UNITS',
+                            color: const Color(0xFFFF8A65),
+                            child: ListView.builder(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                              ),
+                              itemCount: orderedFireVehicles.length,
+                              itemBuilder: (context, index) =>
+                                  _FireVehicleListTile(
+                                    vehicle: orderedFireVehicles[index],
+                                  ),
+                            ),
+                          );
+                        },
+                        loading: () =>
+                            const Center(child: CircularProgressIndicator()),
+                        error: (error, _) => Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: Text(
+                              'Could not load fire units: $error',
+                              style: const TextStyle(
+                                color: Color(0xFFFF5252),
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                itemCount: vehicles.length,
-                itemBuilder: (_, i) => _VehicleListTile(vehicle: vehicles[i]),
-              ),
-            ),
-          ],
-        ),
+            ],
+          );
+        },
         loading: () => const Center(
           child: CircularProgressIndicator(color: Color(0xFF00B0FF)),
         ),
@@ -107,47 +193,148 @@ class StatsPanel extends ConsumerWidget {
   }
 }
 
+List<T> _sortIncidentUnits<T>(
+  List<T> units,
+  bool Function(T) isOnScene,
+  bool Function(T) isDispatched,
+  String Function(T) codeOf,
+) {
+  final sortedUnits = [...units];
+  int priority(T unit) {
+    if (isOnScene(unit)) return 0;
+    if (isDispatched(unit)) return 1;
+    return 2;
+  }
+
+  sortedUnits.sort((first, second) {
+    final priorityComparison = priority(first).compareTo(priority(second));
+    if (priorityComparison != 0) return priorityComparison;
+    return codeOf(first).compareTo(codeOf(second));
+  });
+  return sortedUnits;
+}
+
 // ─── Summary row ────────────────────────────────────────────────────────────
 
-class _SummaryRow extends StatelessWidget {
-  final List<Vehicle> vehicles;
-  const _SummaryRow({required this.vehicles});
+class _PanelSectionTitle extends StatelessWidget {
+  final String title;
+  final Color color;
+
+  const _PanelSectionTitle({required this.title, required this.color});
 
   @override
-  Widget build(BuildContext context) {
-    final available = vehicles.where((v) => v.status == 'available').length;
-    final dispatched = vehicles
-        .where(
-          (v) =>
-              v.status == 'dispatched' ||
-              v.status == 'returning' ||
-              v.status == 'repositioning',
-        )
-        .length;
-    final onScene = vehicles.where((v) => v.status == 'on_scene').length;
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: 6),
+    child: Text(
+      title,
+      style: TextStyle(
+        color: color,
+        fontSize: 10,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 1.2,
+      ),
+    ),
+  );
+}
 
-    return Row(
-      children: [
-        _CounterCard(
-          label: 'Available',
-          count: available,
-          color: const Color(0xFF00E676),
+class _UnitGroup extends StatelessWidget {
+  final String title;
+  final Color color;
+  final Widget child;
+
+  const _UnitGroup({
+    required this.title,
+    required this.color,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(12, 6, 12, 2),
+        child: Text(
+          title,
+          style: TextStyle(
+            color: color,
+            fontSize: 9,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1,
+          ),
         ),
-        const SizedBox(width: 8),
-        _CounterCard(
-          label: 'In Transit',
-          count: dispatched,
-          color: const Color(0xFFFFD740),
-        ),
-        const SizedBox(width: 8),
-        _CounterCard(
-          label: 'On Scene',
-          count: onScene,
-          color: const Color(0xFFFF5252),
-        ),
-      ],
-    );
-  }
+      ),
+      Expanded(child: child),
+    ],
+  );
+}
+
+class _StatusSummaryRow extends StatelessWidget {
+  final int available;
+  final int inTransit;
+  final int onScene;
+
+  const _StatusSummaryRow({
+    required this.available,
+    required this.inTransit,
+    required this.onScene,
+  });
+
+  factory _StatusSummaryRow.fromStatuses(List<Vehicle> vehicles) =>
+      _StatusSummaryRow(
+        available: vehicles
+            .where((vehicle) => vehicle.status == 'available')
+            .length,
+        inTransit: vehicles
+            .where(
+              (vehicle) =>
+                  vehicle.status == 'dispatched' ||
+                  vehicle.status == 'returning' ||
+                  vehicle.status == 'repositioning',
+            )
+            .length,
+        onScene: vehicles
+            .where((vehicle) => vehicle.status == 'on_scene')
+            .length,
+      );
+
+  factory _StatusSummaryRow.fromFireStatuses(
+    List<FireVehicle> vehicles,
+  ) => _StatusSummaryRow(
+    available: vehicles
+        .where((vehicle) => vehicle.status == 'available')
+        .length,
+    inTransit: vehicles
+        .where(
+          (vehicle) =>
+              vehicle.status == 'dispatched' || vehicle.status == 'returning',
+        )
+        .length,
+    onScene: vehicles.where((vehicle) => vehicle.status == 'on_scene').length,
+  );
+
+  @override
+  Widget build(BuildContext context) => Row(
+    children: [
+      _CounterCard(
+        label: 'Available',
+        count: available,
+        color: const Color(0xFF00E676),
+      ),
+      const SizedBox(width: 8),
+      _CounterCard(
+        label: 'In Transit',
+        count: inTransit,
+        color: const Color(0xFFFFD740),
+      ),
+      const SizedBox(width: 8),
+      _CounterCard(
+        label: 'On Scene',
+        count: onScene,
+        color: const Color(0xFFFF5252),
+      ),
+    ],
+  );
 }
 
 class _CounterCard extends StatelessWidget {
@@ -377,7 +564,7 @@ class _VehicleListTileState extends ConsumerState<_VehicleListTile> {
               onPressed: _isCompleting || vehicle.id == null
                   ? null
                   : _completeIncident,
-              tooltip: 'Concluir atendimento e liberar unidade',
+              tooltip: 'Complete response and release unit',
               visualDensity: VisualDensity.compact,
               constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
               padding: EdgeInsets.zero,
@@ -408,17 +595,142 @@ class _VehicleListTileState extends ConsumerState<_VehicleListTile> {
       await ref.read(clientProvider).dispatch.completeIncident(vehicleId);
       if (!mounted) return;
       ref.invalidate(activeIncidentsProvider);
+      ref.invalidate(incidentHistoryProvider);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Ocorrência encerrada. Unidade retornando à patrulha.'),
+          content: Text('Incident closed. Unit returning to patrol.'),
         ),
       );
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Não foi possível concluir o atendimento: $error'),
+          content: Text('Could not complete response: $error'),
         ),
+      );
+    } finally {
+      if (mounted) setState(() => _isCompleting = false);
+    }
+  }
+}
+
+class _FireVehicleListTile extends ConsumerStatefulWidget {
+  final FireVehicle vehicle;
+  const _FireVehicleListTile({required this.vehicle});
+
+  @override
+  ConsumerState<_FireVehicleListTile> createState() =>
+      _FireVehicleListTileState();
+}
+
+class _FireVehicleListTileState extends ConsumerState<_FireVehicleListTile> {
+  bool _isCompleting = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final vehicle = widget.vehicle;
+    final color = switch (vehicle.status) {
+      'available' => const Color(0xFF00E676),
+      'dispatched' => const Color(0xFFFFD740),
+      'on_scene' => const Color(0xFFFF5252),
+      'returning' => const Color(0xFF40C4FF),
+      _ => Colors.grey,
+    };
+
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A2E),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.fire_truck, color: color, size: 18),
+          const SizedBox(width: 10),
+          Text(
+            vehicle.code,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+              fontSize: 13,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              vehicle.stationCode,
+              style: const TextStyle(color: Colors.white38, fontSize: 11),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const Spacer(),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: color.withValues(alpha: 0.4)),
+            ),
+            child: Text(
+              vehicle.status.toUpperCase().replaceAll('_', ' '),
+              style: TextStyle(
+                color: color,
+                fontSize: 9,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          if (vehicle.status == 'on_scene') ...[
+            const SizedBox(width: 6),
+            IconButton(
+              onPressed: _isCompleting || vehicle.id == null
+                  ? null
+                  : _completeIncident,
+              tooltip: 'Complete fire response and return unit to its station',
+              visualDensity: VisualDensity.compact,
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              padding: EdgeInsets.zero,
+              icon: _isCompleting
+                  ? const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(
+                      Icons.check_circle_outline,
+                      color: Color(0xFF00E676),
+                      size: 20,
+                    ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _completeIncident() async {
+    final fireVehicleId = widget.vehicle.id;
+    if (fireVehicleId == null) return;
+
+    setState(() => _isCompleting = true);
+    try {
+      await ref
+          .read(clientProvider)
+          .dispatch
+          .completeFireIncident(fireVehicleId);
+      if (!mounted) return;
+      ref.invalidate(activeIncidentsProvider);
+      ref.invalidate(incidentHistoryProvider);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Fire response completed. Unit returning to station.'),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not complete fire response: $error')),
       );
     } finally {
       if (mounted) setState(() => _isCompleting = false);

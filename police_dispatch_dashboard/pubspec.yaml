@@ -25,6 +25,7 @@ dependencies:
 
   # HTTP client (used by flutter_map tile providers)
   http: ^1.2.0
+  audioplayers: ^6.1.0
 
   # State management
   flutter_riverpod: ^2.5.1

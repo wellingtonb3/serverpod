@@ -1,7 +1,10 @@
 dispatch:
   - monitorVehicles:
+  - monitorFireVehicles:
   - monitorSectorCoverage:
   - requestDispatch:
   - getAllSectors:
+  - getAllFireStations:
   - getIncidentsByStatus:
   - completeIncident:
+  - completeFireIncident:

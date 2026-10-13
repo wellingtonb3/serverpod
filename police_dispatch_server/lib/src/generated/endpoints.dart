@@ -46,6 +46,13 @@ class Endpoints extends _is.EndpointDispatch {
               (endpoints['dispatch'] as _i67rg7lj.DispatchEndpoint)
                   .getAllSectors(session),
         ),
+        'getAllFireStations': _is.MethodConnector(
+          name: 'getAllFireStations',
+          params: {},
+          call: (_is.Session session, Map<String, dynamic> params) async =>
+              (endpoints['dispatch'] as _i67rg7lj.DispatchEndpoint)
+                  .getAllFireStations(session),
+        ),
         'getIncidentsByStatus': _is.MethodConnector(
           name: 'getIncidentsByStatus',
           params: {
@@ -72,6 +79,19 @@ class Endpoints extends _is.EndpointDispatch {
               (endpoints['dispatch'] as _i67rg7lj.DispatchEndpoint)
                   .completeIncident(session, params['vehicleId']),
         ),
+        'completeFireIncident': _is.MethodConnector(
+          name: 'completeFireIncident',
+          params: {
+            'fireVehicleId': _is.ParameterDescription(
+              name: 'fireVehicleId',
+              type: _is.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call: (_is.Session session, Map<String, dynamic> params) async =>
+              (endpoints['dispatch'] as _i67rg7lj.DispatchEndpoint)
+                  .completeFireIncident(session, params['fireVehicleId']),
+        ),
         'monitorVehicles': _is.MethodStreamConnector(
           name: 'monitorVehicles',
           params: {},
@@ -84,6 +104,19 @@ class Endpoints extends _is.EndpointDispatch {
                 Map<String, Stream> streamParams,
               ) => (endpoints['dispatch'] as _i67rg7lj.DispatchEndpoint)
                   .monitorVehicles(session),
+        ),
+        'monitorFireVehicles': _is.MethodStreamConnector(
+          name: 'monitorFireVehicles',
+          params: {},
+          streamParams: {},
+          returnType: _is.MethodStreamReturnType.streamType,
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+                Map<String, Stream> streamParams,
+              ) => (endpoints['dispatch'] as _i67rg7lj.DispatchEndpoint)
+                  .monitorFireVehicles(session),
         ),
         'monitorSectorCoverage': _is.MethodStreamConnector(
           name: 'monitorSectorCoverage',

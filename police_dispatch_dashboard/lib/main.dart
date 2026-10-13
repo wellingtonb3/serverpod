@@ -32,12 +32,12 @@ class PoliceDispatchApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Police Dispatch Dashboard',
+      title: 'Titan System',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: const ColorScheme.dark(
-          primary: Color(0xFF1565C0),      // Deep police blue
-          secondary: Color(0xFF00B0FF),    // Accent cyan
+          primary: Color(0xFF1565C0), // Deep police blue
+          secondary: Color(0xFF00B0FF), // Accent cyan
           surface: Color(0xFF1A1A2E),
           error: Color(0xFFCF6679),
         ),

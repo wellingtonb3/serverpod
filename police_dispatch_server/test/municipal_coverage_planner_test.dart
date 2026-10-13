@@ -20,6 +20,25 @@ void main() {
       );
     });
 
+    test('identifies addresses inside and outside the municipality', () async {
+      final geoJson = await MunicipalCoveragePlanner.readBoundaryGeoJson();
+
+      expect(
+        MunicipalCoveragePlanner.isWithinMunicipality(geoJson, (
+          latitude: -23.5505,
+          longitude: -46.6333,
+        )),
+        isTrue,
+      );
+      expect(
+        MunicipalCoveragePlanner.isWithinMunicipality(geoJson, (
+          latitude: -23.5505,
+          longitude: -46.3,
+        )),
+        isFalse,
+      );
+    });
+
     test('spreads patrol targets across the coverage area', () async {
       final geoJson = await MunicipalCoveragePlanner.readBoundaryGeoJson();
       final samples = MunicipalCoveragePlanner.sampleMunicipality(geoJson);
@@ -36,23 +55,38 @@ void main() {
       );
     });
 
-    test('30 patrol targets improve sampled citywide coverage', () async {
+    test('75 patrol targets improve sampled citywide coverage', () async {
       final geoJson = await MunicipalCoveragePlanner.readBoundaryGeoJson();
       final samples = MunicipalCoveragePlanner.sampleMunicipality(geoJson);
-      final targets = MunicipalCoveragePlanner.selectPatrolTargets(
+      final targets75 = MunicipalCoveragePlanner.selectPatrolTargets(
         samples,
         MunicipalCoveragePlanner.patrolFleetSize,
       );
-      final maximumDistance =
-          MunicipalCoveragePlanner.maximumCoverageDistanceKm(samples, targets);
+      final targets30 = MunicipalCoveragePlanner.selectPatrolTargets(
+        samples,
+        30,
+      );
+      final maximumDistance75 =
+          MunicipalCoveragePlanner.maximumCoverageDistanceKm(
+            samples,
+            targets75,
+          );
+      final maximumDistance30 =
+          MunicipalCoveragePlanner.maximumCoverageDistanceKm(
+            samples,
+            targets30,
+          );
 
-      expect(targets, hasLength(MunicipalCoveragePlanner.patrolFleetSize));
+      expect(targets75, hasLength(MunicipalCoveragePlanner.patrolFleetSize));
       expect(
-        targets.toSet(),
+        targets75.toSet(),
         hasLength(MunicipalCoveragePlanner.patrolFleetSize),
       );
-      expect(maximumDistance, lessThan(10.44));
-      expect(maximumDistance, greaterThan(5));
+      expect(maximumDistance75, lessThan(maximumDistance30));
+      expect(
+        maximumDistance75,
+        lessThan(MunicipalCoveragePlanner.targetRadiusKm),
+      );
     });
 
     test('assigns each patrol unit to a distinct target', () {

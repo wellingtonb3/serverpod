@@ -32,6 +32,8 @@ class _DispatchMapState extends ConsumerState<DispatchMap> {
     final sectorCoverage = ref.watch(sectorCoverageProvider);
     final sectorsAsync = ref.watch(sectorsProvider);
     final incidentsAsync = ref.watch(activeIncidentsProvider);
+    final fireVehiclesAsync = ref.watch(fireVehicleStreamProvider);
+    final fireStationsAsync = ref.watch(fireStationsProvider);
 
     return Stack(
       children: [
@@ -113,11 +115,115 @@ class _DispatchMapState extends ConsumerState<DispatchMap> {
               loading: () => const MarkerLayer(markers: []),
               error: (_, __) => const MarkerLayer(markers: []),
             ),
+            fireStationsAsync.when(
+              data: (stations) {
+                final availableByStation = <String, int>{};
+                for (final vehicle in fireVehiclesAsync.valueOrNull ?? []) {
+                  if (vehicle.status == 'available') {
+                    availableByStation.update(
+                      vehicle.stationCode,
+                      (count) => count + 1,
+                      ifAbsent: () => 1,
+                    );
+                  }
+                }
+                return MarkerLayer(
+                  markers: stations.map((station) {
+                    final count = availableByStation[station.stationCode] ?? 0;
+                    return Marker(
+                      point: LatLng(station.latitude, station.longitude),
+                      width: 54,
+                      height: 48,
+                      child: Tooltip(
+                        message: '${station.name}\n$count fire units available',
+                        child: Column(
+                          children: [
+                            Text(
+                              '$count',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const Icon(
+                              Icons.fire_truck,
+                              color: Color(0xFFFF7043),
+                              size: 28,
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                );
+              },
+              loading: () => const MarkerLayer(markers: []),
+              error: (_, __) => const MarkerLayer(markers: []),
+            ),
+            fireVehiclesAsync.when(
+              data: (vehicles) => MarkerLayer(
+                markers: vehicles
+                    .where((vehicle) => vehicle.status != 'available')
+                    .map(
+                      (vehicle) => Marker(
+                        point: LatLng(vehicle.latitude, vehicle.longitude),
+                        width: 48,
+                        height: 52,
+                        child: Column(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.black87,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                vehicle.code,
+                                maxLines: 1,
+                                softWrap: false,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            const Icon(
+                              Icons.fire_truck,
+                              color: Color(0xFFFF7043),
+                              size: 27,
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                    .toList(),
+              ),
+              loading: () => const MarkerLayer(markers: []),
+              error: (_, __) => const MarkerLayer(markers: []),
+            ),
           ],
         ),
 
         // ── Map legend overlay ─────────────────────────────────────────────
         Positioned(bottom: 12, left: 12, child: _MapLegend()),
+        Positioned(
+          bottom: 8,
+          right: 8,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+            color: Colors.black54,
+            child: const Text(
+              '© OpenStreetMap contributors · fire-station data is community mapped',
+              style: TextStyle(color: Colors.white70, fontSize: 9),
+            ),
+          ),
+        ),
 
         // ── Vehicle count badge ────────────────────────────────────────────
         Positioned(
@@ -233,8 +339,6 @@ class _DispatchMapState extends ConsumerState<DispatchMap> {
                   ? 'São Paulo'
                   : vehicle.currentSector,
             ),
-            _DetailRow('Latitude', vehicle.latitude.toStringAsFixed(5)),
-            _DetailRow('Longitude', vehicle.longitude.toStringAsFixed(5)),
             if (vehicle.assignedIncidentId != null)
               _DetailRow('Incident ID', '#${vehicle.assignedIncidentId}'),
             const SizedBox(height: 8),

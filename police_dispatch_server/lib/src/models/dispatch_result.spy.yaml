@@ -6,4 +6,5 @@ fields:
   success: bool
   message: String
   assignedVehicleCode: String?
+  assignedFireVehicleCodes: String?
   estimatedArrivalSeconds: int?

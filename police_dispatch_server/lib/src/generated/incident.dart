@@ -13,17 +13,21 @@
 import 'package:serverpod/serverpod.dart' as _is;
 
 /// Incident model
-/// Represents a police call/incident requiring a patrol vehicle.
+/// Represents an emergency call requiring police, firefighters, or both.
 abstract class Incident
     implements _is.TableRow<int?>, _is.ProtocolSerialization {
   Incident._({
     this.id,
     required this.description,
+    this.address,
     required this.latitude,
     required this.longitude,
     required this.status,
     required this.sectorId,
+    this.requestedServices,
     this.assignedVehicleId,
+    this.assignedFireVehicleOneId,
+    this.assignedFireVehicleTwoId,
     required this.createdAt,
     this.closedAt,
   });
@@ -31,11 +35,15 @@ abstract class Incident
   factory Incident({
     int? id,
     required String description,
+    String? address,
     required double latitude,
     required double longitude,
     required String status,
     required String sectorId,
+    String? requestedServices,
     int? assignedVehicleId,
+    int? assignedFireVehicleOneId,
+    int? assignedFireVehicleTwoId,
     required DateTime createdAt,
     DateTime? closedAt,
   }) = _IncidentImpl;
@@ -44,11 +52,17 @@ abstract class Incident
     return Incident(
       id: jsonSerialization['id'] as int?,
       description: jsonSerialization['description'] as String,
+      address: jsonSerialization['address'] as String?,
       latitude: (jsonSerialization['latitude'] as num).toDouble(),
       longitude: (jsonSerialization['longitude'] as num).toDouble(),
       status: jsonSerialization['status'] as String,
       sectorId: jsonSerialization['sectorId'] as String,
+      requestedServices: jsonSerialization['requestedServices'] as String?,
       assignedVehicleId: jsonSerialization['assignedVehicleId'] as int?,
+      assignedFireVehicleOneId:
+          jsonSerialization['assignedFireVehicleOneId'] as int?,
+      assignedFireVehicleTwoId:
+          jsonSerialization['assignedFireVehicleTwoId'] as int?,
       createdAt: _is.DateTimeJsonExtension.fromJson(
         jsonSerialization['createdAt'],
       ),
@@ -67,6 +81,8 @@ abstract class Incident
 
   String description;
 
+  String? address;
+
   double latitude;
 
   double longitude;
@@ -75,7 +91,13 @@ abstract class Incident
 
   String sectorId;
 
+  String? requestedServices;
+
   int? assignedVehicleId;
+
+  int? assignedFireVehicleOneId;
+
+  int? assignedFireVehicleTwoId;
 
   DateTime createdAt;
 
@@ -90,11 +112,15 @@ abstract class Incident
   Incident copyWith({
     int? id,
     String? description,
+    String? address,
     double? latitude,
     double? longitude,
     String? status,
     String? sectorId,
+    String? requestedServices,
     int? assignedVehicleId,
+    int? assignedFireVehicleOneId,
+    int? assignedFireVehicleTwoId,
     DateTime? createdAt,
     DateTime? closedAt,
   });
@@ -104,11 +130,17 @@ abstract class Incident
       '__className__': 'Incident',
       if (id != null) 'id': id,
       'description': description,
+      if (address != null) 'address': address,
       'latitude': latitude,
       'longitude': longitude,
       'status': status,
       'sectorId': sectorId,
+      if (requestedServices != null) 'requestedServices': requestedServices,
       if (assignedVehicleId != null) 'assignedVehicleId': assignedVehicleId,
+      if (assignedFireVehicleOneId != null)
+        'assignedFireVehicleOneId': assignedFireVehicleOneId,
+      if (assignedFireVehicleTwoId != null)
+        'assignedFireVehicleTwoId': assignedFireVehicleTwoId,
       'createdAt': createdAt.toJson(),
       if (closedAt != null) 'closedAt': closedAt?.toJson(),
     };
@@ -120,11 +152,17 @@ abstract class Incident
       '__className__': 'Incident',
       if (id != null) 'id': id,
       'description': description,
+      if (address != null) 'address': address,
       'latitude': latitude,
       'longitude': longitude,
       'status': status,
       'sectorId': sectorId,
+      if (requestedServices != null) 'requestedServices': requestedServices,
       if (assignedVehicleId != null) 'assignedVehicleId': assignedVehicleId,
+      if (assignedFireVehicleOneId != null)
+        'assignedFireVehicleOneId': assignedFireVehicleOneId,
+      if (assignedFireVehicleTwoId != null)
+        'assignedFireVehicleTwoId': assignedFireVehicleTwoId,
       'createdAt': createdAt.toJson(),
       if (closedAt != null) 'closedAt': closedAt?.toJson(),
     };
@@ -164,21 +202,29 @@ class _IncidentImpl extends Incident {
   _IncidentImpl({
     int? id,
     required String description,
+    String? address,
     required double latitude,
     required double longitude,
     required String status,
     required String sectorId,
+    String? requestedServices,
     int? assignedVehicleId,
+    int? assignedFireVehicleOneId,
+    int? assignedFireVehicleTwoId,
     required DateTime createdAt,
     DateTime? closedAt,
   }) : super._(
          id: id,
          description: description,
+         address: address,
          latitude: latitude,
          longitude: longitude,
          status: status,
          sectorId: sectorId,
+         requestedServices: requestedServices,
          assignedVehicleId: assignedVehicleId,
+         assignedFireVehicleOneId: assignedFireVehicleOneId,
+         assignedFireVehicleTwoId: assignedFireVehicleTwoId,
          createdAt: createdAt,
          closedAt: closedAt,
        );
@@ -190,24 +236,38 @@ class _IncidentImpl extends Incident {
   Incident copyWith({
     Object? id = _Undefined,
     String? description,
+    Object? address = _Undefined,
     double? latitude,
     double? longitude,
     String? status,
     String? sectorId,
+    Object? requestedServices = _Undefined,
     Object? assignedVehicleId = _Undefined,
+    Object? assignedFireVehicleOneId = _Undefined,
+    Object? assignedFireVehicleTwoId = _Undefined,
     DateTime? createdAt,
     Object? closedAt = _Undefined,
   }) {
     return Incident(
       id: id is int? ? id : this.id,
       description: description ?? this.description,
+      address: address is String? ? address : this.address,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
       status: status ?? this.status,
       sectorId: sectorId ?? this.sectorId,
+      requestedServices: requestedServices is String?
+          ? requestedServices
+          : this.requestedServices,
       assignedVehicleId: assignedVehicleId is int?
           ? assignedVehicleId
           : this.assignedVehicleId,
+      assignedFireVehicleOneId: assignedFireVehicleOneId is int?
+          ? assignedFireVehicleOneId
+          : this.assignedFireVehicleOneId,
+      assignedFireVehicleTwoId: assignedFireVehicleTwoId is int?
+          ? assignedFireVehicleTwoId
+          : this.assignedFireVehicleTwoId,
       createdAt: createdAt ?? this.createdAt,
       closedAt: closedAt is DateTime? ? closedAt : this.closedAt,
     );
@@ -219,6 +279,9 @@ class IncidentUpdateTable extends _is.UpdateTable<IncidentTable> {
 
   _is.ColumnValue<String, String> description(String value) =>
       _is.ColumnValue(table.description, value);
+
+  _is.ColumnValue<String, String> address(String? value) =>
+      _is.ColumnValue(table.address, value);
 
   _is.ColumnValue<double, double> latitude(double value) =>
       _is.ColumnValue(table.latitude, value);
@@ -232,8 +295,17 @@ class IncidentUpdateTable extends _is.UpdateTable<IncidentTable> {
   _is.ColumnValue<String, String> sectorId(String value) =>
       _is.ColumnValue(table.sectorId, value);
 
+  _is.ColumnValue<String, String> requestedServices(String? value) =>
+      _is.ColumnValue(table.requestedServices, value);
+
   _is.ColumnValue<int, int> assignedVehicleId(int? value) =>
       _is.ColumnValue(table.assignedVehicleId, value);
+
+  _is.ColumnValue<int, int> assignedFireVehicleOneId(int? value) =>
+      _is.ColumnValue(table.assignedFireVehicleOneId, value);
+
+  _is.ColumnValue<int, int> assignedFireVehicleTwoId(int? value) =>
+      _is.ColumnValue(table.assignedFireVehicleTwoId, value);
 
   _is.ColumnValue<DateTime, DateTime> createdAt(DateTime value) =>
       _is.ColumnValue(table.createdAt, value);
@@ -246,11 +318,15 @@ class IncidentTable extends _is.Table<int?> {
   IncidentTable({super.tableRelation}) : super(tableName: 'incident') {
     updateTable = IncidentUpdateTable(this);
     description = _is.ColumnString('description', this);
+    address = _is.ColumnString('address', this);
     latitude = _is.ColumnDouble('latitude', this);
     longitude = _is.ColumnDouble('longitude', this);
     status = _is.ColumnString('status', this);
     sectorId = _is.ColumnString('sectorId', this);
+    requestedServices = _is.ColumnString('requestedServices', this);
     assignedVehicleId = _is.ColumnInt('assignedVehicleId', this);
+    assignedFireVehicleOneId = _is.ColumnInt('assignedFireVehicleOneId', this);
+    assignedFireVehicleTwoId = _is.ColumnInt('assignedFireVehicleTwoId', this);
     createdAt = _is.ColumnDateTime('createdAt', this);
     closedAt = _is.ColumnDateTime('closedAt', this);
   }
@@ -258,6 +334,8 @@ class IncidentTable extends _is.Table<int?> {
   late final IncidentUpdateTable updateTable;
 
   late final _is.ColumnString description;
+
+  late final _is.ColumnString address;
 
   late final _is.ColumnDouble latitude;
 
@@ -267,7 +345,13 @@ class IncidentTable extends _is.Table<int?> {
 
   late final _is.ColumnString sectorId;
 
+  late final _is.ColumnString requestedServices;
+
   late final _is.ColumnInt assignedVehicleId;
+
+  late final _is.ColumnInt assignedFireVehicleOneId;
+
+  late final _is.ColumnInt assignedFireVehicleTwoId;
 
   late final _is.ColumnDateTime createdAt;
 
@@ -277,11 +361,15 @@ class IncidentTable extends _is.Table<int?> {
   List<_is.Column> get columns => [
     id,
     description,
+    address,
     latitude,
     longitude,
     status,
     sectorId,
+    requestedServices,
     assignedVehicleId,
+    assignedFireVehicleOneId,
+    assignedFireVehicleTwoId,
     createdAt,
     closedAt,
   ];

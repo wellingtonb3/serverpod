@@ -1,0 +1,16 @@
+### A mapped fire station sourced from OpenStreetMap.
+
+class: FireStation
+table: fire_station
+fields:
+  stationCode: String
+  name: String
+  latitude: double
+  longitude: double
+  osmType: String
+  osmId: String
+
+indexes:
+  fire_station_code_idx:
+    fields: stationCode
+    unique: true

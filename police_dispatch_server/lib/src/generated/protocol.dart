@@ -11,6 +11,10 @@
 // ignore_for_file: dead_code, unnecessary_type_check
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
+import 'package:police_dispatch_server/src/generated/fire_station.dart'
+    as _i7h7jh54;
+import 'package:police_dispatch_server/src/generated/fire_vehicle.dart'
+    as _i7sfox37;
 import 'package:police_dispatch_server/src/generated/incident.dart'
     as _ij8xcy4q;
 import 'package:police_dispatch_server/src/generated/sector.dart' as _ip3dw7fn;
@@ -18,11 +22,15 @@ import 'package:police_dispatch_server/src/generated/vehicle.dart' as _ibypfoth;
 import 'package:serverpod/protocol.dart' as _isp;
 import 'package:serverpod/serverpod.dart' as _is;
 import 'dispatch_result.dart' as _ifw1qgcx;
+import 'fire_station.dart' as _i7g8p8gq;
+import 'fire_vehicle.dart' as _ij7uetzm;
 import 'incident.dart' as _iy4wsyyx;
 import 'map_update_message.dart' as _iic1uq60;
 import 'sector.dart' as _i0xllqjf;
 import 'vehicle.dart' as _imszitsy;
 export 'dispatch_result.dart';
+export 'fire_station.dart';
+export 'fire_vehicle.dart';
 export 'incident.dart';
 export 'map_update_message.dart';
 export 'sector.dart';
@@ -36,6 +44,167 @@ class Protocol extends _is.DatabaseSerializationManager {
   static final Protocol _instance = Protocol._();
 
   static List<_isp.TableDefinition> get targetTableDefinitions => [
+    _isp.TableDefinition(
+      name: 'fire_station',
+      dartName: 'FireStation',
+      schema: 'public',
+      module: 'police_dispatch',
+      columns: [
+        _isp.ColumnDefinition(
+          name: 'id',
+          columnType: _isp.ColumnType.bigint,
+          isNullable: false,
+          dartType: 'int?',
+          columnDefault: 'serial',
+        ),
+        _isp.ColumnDefinition(
+          name: 'stationCode',
+          columnType: _isp.ColumnType.text,
+          isNullable: false,
+          dartType: 'String',
+        ),
+        _isp.ColumnDefinition(
+          name: 'name',
+          columnType: _isp.ColumnType.text,
+          isNullable: false,
+          dartType: 'String',
+        ),
+        _isp.ColumnDefinition(
+          name: 'latitude',
+          columnType: _isp.ColumnType.doublePrecision,
+          isNullable: false,
+          dartType: 'double',
+        ),
+        _isp.ColumnDefinition(
+          name: 'longitude',
+          columnType: _isp.ColumnType.doublePrecision,
+          isNullable: false,
+          dartType: 'double',
+        ),
+        _isp.ColumnDefinition(
+          name: 'osmType',
+          columnType: _isp.ColumnType.text,
+          isNullable: false,
+          dartType: 'String',
+        ),
+        _isp.ColumnDefinition(
+          name: 'osmId',
+          columnType: _isp.ColumnType.text,
+          isNullable: false,
+          dartType: 'String',
+        ),
+      ],
+      foreignKeys: [],
+      indexes: [
+        _isp.IndexDefinition(
+          indexName: 'fire_station_code_idx',
+          tableSpace: null,
+          elements: [
+            _isp.IndexElementDefinition(
+              type: _isp.IndexElementDefinitionType.column,
+              definition: 'stationCode',
+            ),
+          ],
+          type: 'btree',
+          isUnique: true,
+          isPrimary: false,
+        ),
+      ],
+      managed: true,
+    ),
+    _isp.TableDefinition(
+      name: 'fire_vehicle',
+      dartName: 'FireVehicle',
+      schema: 'public',
+      module: 'police_dispatch',
+      columns: [
+        _isp.ColumnDefinition(
+          name: 'id',
+          columnType: _isp.ColumnType.bigint,
+          isNullable: false,
+          dartType: 'int?',
+          columnDefault: 'serial',
+        ),
+        _isp.ColumnDefinition(
+          name: 'code',
+          columnType: _isp.ColumnType.text,
+          isNullable: false,
+          dartType: 'String',
+        ),
+        _isp.ColumnDefinition(
+          name: 'stationCode',
+          columnType: _isp.ColumnType.text,
+          isNullable: false,
+          dartType: 'String',
+        ),
+        _isp.ColumnDefinition(
+          name: 'latitude',
+          columnType: _isp.ColumnType.doublePrecision,
+          isNullable: false,
+          dartType: 'double',
+        ),
+        _isp.ColumnDefinition(
+          name: 'longitude',
+          columnType: _isp.ColumnType.doublePrecision,
+          isNullable: false,
+          dartType: 'double',
+        ),
+        _isp.ColumnDefinition(
+          name: 'status',
+          columnType: _isp.ColumnType.text,
+          isNullable: false,
+          dartType: 'String',
+        ),
+        _isp.ColumnDefinition(
+          name: 'targetLatitude',
+          columnType: _isp.ColumnType.doublePrecision,
+          isNullable: true,
+          dartType: 'double?',
+        ),
+        _isp.ColumnDefinition(
+          name: 'targetLongitude',
+          columnType: _isp.ColumnType.doublePrecision,
+          isNullable: true,
+          dartType: 'double?',
+        ),
+        _isp.ColumnDefinition(
+          name: 'assignedIncidentId',
+          columnType: _isp.ColumnType.bigint,
+          isNullable: true,
+          dartType: 'int?',
+        ),
+      ],
+      foreignKeys: [],
+      indexes: [
+        _isp.IndexDefinition(
+          indexName: 'fire_vehicle_status_idx',
+          tableSpace: null,
+          elements: [
+            _isp.IndexElementDefinition(
+              type: _isp.IndexElementDefinitionType.column,
+              definition: 'status',
+            ),
+          ],
+          type: 'btree',
+          isUnique: false,
+          isPrimary: false,
+        ),
+        _isp.IndexDefinition(
+          indexName: 'fire_vehicle_station_idx',
+          tableSpace: null,
+          elements: [
+            _isp.IndexElementDefinition(
+              type: _isp.IndexElementDefinitionType.column,
+              definition: 'stationCode',
+            ),
+          ],
+          type: 'btree',
+          isUnique: false,
+          isPrimary: false,
+        ),
+      ],
+      managed: true,
+    ),
     _isp.TableDefinition(
       name: 'incident',
       dartName: 'Incident',
@@ -54,6 +223,12 @@ class Protocol extends _is.DatabaseSerializationManager {
           columnType: _isp.ColumnType.text,
           isNullable: false,
           dartType: 'String',
+        ),
+        _isp.ColumnDefinition(
+          name: 'address',
+          columnType: _isp.ColumnType.text,
+          isNullable: true,
+          dartType: 'String?',
         ),
         _isp.ColumnDefinition(
           name: 'latitude',
@@ -80,7 +255,25 @@ class Protocol extends _is.DatabaseSerializationManager {
           dartType: 'String',
         ),
         _isp.ColumnDefinition(
+          name: 'requestedServices',
+          columnType: _isp.ColumnType.text,
+          isNullable: true,
+          dartType: 'String?',
+        ),
+        _isp.ColumnDefinition(
           name: 'assignedVehicleId',
+          columnType: _isp.ColumnType.bigint,
+          isNullable: true,
+          dartType: 'int?',
+        ),
+        _isp.ColumnDefinition(
+          name: 'assignedFireVehicleOneId',
+          columnType: _isp.ColumnType.bigint,
+          isNullable: true,
+          dartType: 'int?',
+        ),
+        _isp.ColumnDefinition(
+          name: 'assignedFireVehicleTwoId',
           columnType: _isp.ColumnType.bigint,
           isNullable: true,
           dartType: 'int?',
@@ -332,6 +525,12 @@ class Protocol extends _is.DatabaseSerializationManager {
     if (t == _ifw1qgcx.DispatchResult) {
       return _ifw1qgcx.DispatchResult.fromJson(data) as T;
     }
+    if (t == _i7g8p8gq.FireStation) {
+      return _i7g8p8gq.FireStation.fromJson(data) as T;
+    }
+    if (t == _ij7uetzm.FireVehicle) {
+      return _ij7uetzm.FireVehicle.fromJson(data) as T;
+    }
     if (t == _iy4wsyyx.Incident) {
       return _iy4wsyyx.Incident.fromJson(data) as T;
     }
@@ -347,6 +546,12 @@ class Protocol extends _is.DatabaseSerializationManager {
     if (t == _is.getType<_ifw1qgcx.DispatchResult?>()) {
       return (data != null ? _ifw1qgcx.DispatchResult.fromJson(data) : null)
           as T;
+    }
+    if (t == _is.getType<_i7g8p8gq.FireStation?>()) {
+      return (data != null ? _i7g8p8gq.FireStation.fromJson(data) : null) as T;
+    }
+    if (t == _is.getType<_ij7uetzm.FireVehicle?>()) {
+      return (data != null ? _ij7uetzm.FireVehicle.fromJson(data) : null) as T;
     }
     if (t == _is.getType<_iy4wsyyx.Incident?>()) {
       return (data != null ? _iy4wsyyx.Incident.fromJson(data) : null) as T;
@@ -367,6 +572,12 @@ class Protocol extends _is.DatabaseSerializationManager {
               .toList()
           as T;
     }
+    if (t == List<_i7sfox37.FireVehicle>) {
+      return (data as List)
+              .map((e) => deserialize<_i7sfox37.FireVehicle>(e))
+              .toList()
+          as T;
+    }
     if (t == Map<String, int>) {
       return (data as Map).map(
             (k, v) => MapEntry(deserialize<String>(k), deserialize<int>(v)),
@@ -376,6 +587,12 @@ class Protocol extends _is.DatabaseSerializationManager {
     if (t == List<_ip3dw7fn.Sector>) {
       return (data as List)
               .map((e) => deserialize<_ip3dw7fn.Sector>(e))
+              .toList()
+          as T;
+    }
+    if (t == List<_i7h7jh54.FireStation>) {
+      return (data as List)
+              .map((e) => deserialize<_i7h7jh54.FireStation>(e))
               .toList()
           as T;
     }
@@ -394,6 +611,8 @@ class Protocol extends _is.DatabaseSerializationManager {
   static String? getClassNameForType(Type type) {
     return switch (type) {
       _ifw1qgcx.DispatchResult => 'DispatchResult',
+      _i7g8p8gq.FireStation => 'FireStation',
+      _ij7uetzm.FireVehicle => 'FireVehicle',
       _iy4wsyyx.Incident => 'Incident',
       _iic1uq60.MapUpdateMessage => 'MapUpdateMessage',
       _i0xllqjf.Sector => 'Sector',
@@ -417,6 +636,10 @@ class Protocol extends _is.DatabaseSerializationManager {
     switch (data) {
       case _ifw1qgcx.DispatchResult():
         return 'DispatchResult';
+      case _i7g8p8gq.FireStation():
+        return 'FireStation';
+      case _ij7uetzm.FireVehicle():
+        return 'FireVehicle';
       case _iy4wsyyx.Incident():
         return 'Incident';
       case _iic1uq60.MapUpdateMessage():
@@ -428,6 +651,9 @@ class Protocol extends _is.DatabaseSerializationManager {
     }
     if (data is List<_ibypfoth.Vehicle>) {
       return 'List<Vehicle>';
+    }
+    if (data is List<_i7sfox37.FireVehicle>) {
+      return 'List<FireVehicle>';
     }
     if (data is Map<String, int>) {
       return 'Map<String,int>';
@@ -448,6 +674,12 @@ class Protocol extends _is.DatabaseSerializationManager {
     if (dataClassName == 'DispatchResult') {
       return deserialize<_ifw1qgcx.DispatchResult>(data['data']);
     }
+    if (dataClassName == 'FireStation') {
+      return deserialize<_i7g8p8gq.FireStation>(data['data']);
+    }
+    if (dataClassName == 'FireVehicle') {
+      return deserialize<_ij7uetzm.FireVehicle>(data['data']);
+    }
     if (dataClassName == 'Incident') {
       return deserialize<_iy4wsyyx.Incident>(data['data']);
     }
@@ -467,6 +699,9 @@ class Protocol extends _is.DatabaseSerializationManager {
     if (dataClassName == 'List<Vehicle>') {
       return deserialize<List<_ibypfoth.Vehicle>>(data['data']);
     }
+    if (dataClassName == 'List<FireVehicle>') {
+      return deserialize<List<_i7sfox37.FireVehicle>>(data['data']);
+    }
     if (dataClassName == 'Map<String,int>') {
       return deserialize<Map<String, int>>(data['data']);
     }
@@ -482,6 +717,10 @@ class Protocol extends _is.DatabaseSerializationManager {
       }
     }
     switch (t) {
+      case _i7g8p8gq.FireStation:
+        return _i7g8p8gq.FireStation.t;
+      case _ij7uetzm.FireVehicle:
+        return _ij7uetzm.FireVehicle.t;
       case _iy4wsyyx.Incident:
         return _iy4wsyyx.Incident.t;
       case _i0xllqjf.Sector:

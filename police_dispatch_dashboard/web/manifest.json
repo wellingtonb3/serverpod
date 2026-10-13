@@ -1,11 +1,11 @@
 {
-    "name": "police_dispatch_dashboard",
-    "short_name": "police_dispatch_dashboard",
+    "name": "Titan System",
+    "short_name": "Titan",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Titan System emergency response dashboard.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

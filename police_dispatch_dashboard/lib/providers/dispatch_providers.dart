@@ -31,6 +31,26 @@ final activeIncidentsProvider = FutureProvider<List<Incident>>((ref) async {
   return client.dispatch.getIncidentsByStatus('dispatched');
 });
 
+/// Provides completed incidents for the dispatch history.
+final incidentHistoryProvider = FutureProvider<List<Incident>>((ref) async {
+  final client = ref.watch(clientProvider);
+  final incidents = await client.dispatch.getIncidentsByStatus('closed');
+  incidents.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+  return incidents;
+});
+
+/// Streams the fire-response fleet.
+final fireVehicleStreamProvider = StreamProvider<List<FireVehicle>>((ref) {
+  final client = ref.watch(clientProvider);
+  return client.dispatch.monitorFireVehicles();
+});
+
+/// Loads mapped fire-station locations.
+final fireStationsProvider = FutureProvider<List<FireStation>>((ref) async {
+  final client = ref.watch(clientProvider);
+  return client.dispatch.getAllFireStations();
+});
+
 /// Tracks the currently selected incident form state.
 /// Null means no incident creation is in progress.
 final pendingIncidentProvider = StateProvider<PendingIncident?>((ref) => null);

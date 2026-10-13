@@ -8,13 +8,45 @@ typedef PatrolPoint = ({double latitude, double longitude});
 typedef PatrolAssignment<T> = ({T unit, PatrolPoint target, double distanceKm});
 
 class MunicipalCoveragePlanner {
-  static const patrolFleetSize = 30;
+  static const patrolFleetSize = 75;
   static const targetRadiusKm = 5.0;
   static const _sampleStepKm = 1.0;
   static const boundaryAssetPath = 'assets/sao_paulo_municipality.geojson';
 
   static Future<String> readBoundaryGeoJson() =>
       File(boundaryAssetPath).readAsString();
+
+  static bool isWithinMunicipality(String geoJson, PatrolPoint point) {
+    final collection = jsonDecode(geoJson) as Map<String, dynamic>;
+    final features = collection['features'] as List<dynamic>;
+    for (final feature in features) {
+      final geometry =
+          (feature as Map<String, dynamic>)['geometry'] as Map<String, dynamic>;
+      final polygons = _polygonRings(
+        geometry['type'] as String,
+        geometry['coordinates'] as List<dynamic>,
+      );
+      for (final polygon in polygons) {
+        final rings = polygon
+            .map(
+              (ring) => ring.map((coordinate) {
+                final pair = coordinate;
+                return (
+                  latitude: (pair[1] as num).toDouble(),
+                  longitude: (pair[0] as num).toDouble(),
+                );
+              }).toList(),
+            )
+            .toList();
+        if (rings.isNotEmpty &&
+            _contains(rings.first, point) &&
+            !rings.skip(1).any((hole) => _contains(hole, point))) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
 
   static List<PatrolPoint> sampleMunicipality(String geoJson) {
     final collection = jsonDecode(geoJson) as Map<String, dynamic>;

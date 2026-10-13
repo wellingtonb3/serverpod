@@ -12,7 +12,7 @@ import '../providers/dispatch_providers.dart';
 ///
 /// The dispatcher fills in:
 ///   - Description of the incident
-///   - Latitude / Longitude of the location
+///   - Address of the location
 ///
 /// On submit, the intelligent dispatch algorithm on the server selects
 /// the most appropriate available vehicle and returns an ETA.
@@ -27,11 +27,13 @@ class _IncidentFormState extends ConsumerState<IncidentForm> {
   final _formKey = GlobalKey<FormState>();
   final _descriptionController = TextEditingController();
   final _addressController = TextEditingController();
-  final _latController = TextEditingController();
-  final _lonController = TextEditingController();
+  double? _latitude;
+  double? _longitude;
 
   bool _isSubmitting = false;
   bool _isGeocoding = false;
+  bool _requestPolice = true;
+  bool _requestFirefighters = false;
   String? _resultMessage;
   bool _success = false;
 
@@ -39,231 +41,222 @@ class _IncidentFormState extends ConsumerState<IncidentForm> {
   void dispose() {
     _descriptionController.dispose();
     _addressController.dispose();
-    _latController.dispose();
-    _lonController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
-      decoration: const BoxDecoration(
-        color: Color(0xFF1A1A2E),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // ── Header ─────────────────────────────────────────────────
-              Row(
-                children: [
-                  const Icon(
-                    Icons.report_problem,
-                    color: Color(0xFFFF5252),
-                    size: 22,
-                  ),
-                  const SizedBox(width: 10),
-                  const Text(
-                    'Report New Incident',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+    return Material(
+      color: const Color(0xFF1A1A2E),
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // ── Header ─────────────────────────────────────────────────
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.report_problem,
+                      color: Color(0xFFFF5252),
+                      size: 22,
                     ),
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white54),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-
-              // ── Description field ──────────────────────────────────────
-              _buildLabel('Incident Description'),
-              const SizedBox(height: 6),
-              TextFormField(
-                controller: _descriptionController,
-                style: const TextStyle(color: Colors.white),
-                maxLines: 2,
-                decoration: _inputDecoration(
-                  hint: 'e.g. Armed robbery at Avenida Paulista, near subway',
-                ),
-                validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? 'Required' : null,
-              ),
-              const SizedBox(height: 16),
-
-              _buildLabel('Incident Address in São Paulo'),
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _addressController,
-                      style: const TextStyle(color: Colors.white),
-                      textCapitalization: TextCapitalization.words,
-                      decoration: _inputDecoration(
-                        hint: 'e.g. Avenida Rebouças, 1000',
+                    const SizedBox(width: 10),
+                    const Text(
+                      'Report New Incident',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                       ),
-                      onFieldSubmitted: (_) => _searchAddress(),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton.filled(
-                    tooltip: 'Find address',
-                    onPressed: _isGeocoding || _isSubmitting
-                        ? null
-                        : _searchAddress,
-                    icon: _isGeocoding
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.search),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              const Text(
-                'Searches OpenStreetMap. Select the matching result to set the destination.',
-                style: TextStyle(color: Colors.white38, fontSize: 11),
-              ),
-              const SizedBox(height: 16),
+                    const Spacer(),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white54),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
 
-              // ── Coordinates row ────────────────────────────────────────
-              _buildLabel(
-                'Coordinates (filled by address search or manual entry)',
-              ),
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildLabel('Latitude'),
-                        const SizedBox(height: 6),
-                        TextFormField(
-                          controller: _latController,
-                          style: const TextStyle(color: Colors.white),
-                          keyboardType: const TextInputType.numberWithOptions(
-                            signed: true,
-                            decimal: true,
-                          ),
-                          decoration: _inputDecoration(hint: '-23.5505'),
-                          validator: (v) => _validateDouble(v, 'Latitude'),
-                        ),
-                      ],
-                    ),
+                // ── Description field ──────────────────────────────────────
+                _buildLabel('Incident Description'),
+                const SizedBox(height: 6),
+                TextFormField(
+                  controller: _descriptionController,
+                  style: const TextStyle(color: Colors.white),
+                  maxLines: 2,
+                  decoration: _inputDecoration(
+                    hint: 'e.g. Armed robbery in progress',
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildLabel('Longitude'),
-                        const SizedBox(height: 6),
-                        TextFormField(
-                          controller: _lonController,
-                          style: const TextStyle(color: Colors.white),
-                          keyboardType: const TextInputType.numberWithOptions(
-                            signed: true,
-                            decimal: true,
-                          ),
-                          decoration: _inputDecoration(hint: '-46.6333'),
-                          validator: (v) => _validateDouble(v, 'Longitude'),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
+                  validator: (v) =>
+                      (v == null || v.trim().isEmpty) ? 'Required' : null,
+                ),
+                const SizedBox(height: 16),
 
-              // ── Result message ─────────────────────────────────────────
-              if (_resultMessage != null)
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color:
-                        (_success
-                                ? const Color(0xFF00E676)
-                                : const Color(0xFFFF5252))
-                            .withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: _success
-                          ? const Color(0xFF00E676)
-                          : const Color(0xFFFF5252),
+                _buildLabel('Responding Services'),
+                CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                  value: _requestPolice,
+                  activeColor: const Color(0xFF00B0FF),
+                  title: const Text(
+                    'Police',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  onChanged: _isSubmitting
+                      ? null
+                      : (value) => setState(() => _requestPolice = value!),
+                ),
+                CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                  value: _requestFirefighters,
+                  activeColor: const Color(0xFFFF7043),
+                  title: const Text(
+                    'Firefighters (one unit; request again if another is needed)',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  onChanged: _isSubmitting
+                      ? null
+                      : (value) =>
+                            setState(() => _requestFirefighters = value!),
+                ),
+                if (!_requestPolice && !_requestFirefighters)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 4),
+                    child: Text(
+                      'Select at least one service.',
+                      style: TextStyle(color: Color(0xFFFF5252), fontSize: 12),
                     ),
                   ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        _success ? Icons.check_circle : Icons.error,
+                const SizedBox(height: 12),
+
+                _buildLabel('Incident Address (enter the location separately)'),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _addressController,
+                        style: const TextStyle(color: Colors.white),
+                        textCapitalization: TextCapitalization.words,
+                        decoration: _inputDecoration(
+                          hint: 'e.g. Avenida Rebouças, 1000',
+                        ),
+                        onChanged: (_) {
+                          _latitude = null;
+                          _longitude = null;
+                        },
+                        onFieldSubmitted: (_) => _searchAddress(),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton.filled(
+                      tooltip: 'Find address',
+                      onPressed: _isGeocoding || _isSubmitting
+                          ? null
+                          : _searchAddress,
+                      icon: _isGeocoding
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.search),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'Search OpenStreetMap and select the matching address. The dashboard serves São Paulo city only.',
+                  style: TextStyle(color: Colors.white38, fontSize: 11),
+                ),
+                const SizedBox(height: 24),
+
+                // ── Result message ─────────────────────────────────────────
+                if (_resultMessage != null)
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color:
+                          (_success
+                                  ? const Color(0xFF00E676)
+                                  : const Color(0xFFFF5252))
+                              .withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
                         color: _success
                             ? const Color(0xFF00E676)
                             : const Color(0xFFFF5252),
-                        size: 18,
                       ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          _resultMessage!,
-                          style: TextStyle(
-                            color: _success
-                                ? const Color(0xFF00E676)
-                                : const Color(0xFFFF5252),
-                            fontSize: 13,
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          _success ? Icons.check_circle : Icons.error,
+                          color: _success
+                              ? const Color(0xFF00E676)
+                              : const Color(0xFFFF5252),
+                          size: 18,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            _resultMessage!,
+                            style: TextStyle(
+                              color: _success
+                                  ? const Color(0xFF00E676)
+                                  : const Color(0xFFFF5252),
+                              fontSize: 13,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-
-              // ── Submit button ──────────────────────────────────────────
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFB71C1C),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      ],
                     ),
                   ),
-                  icon: _isSubmitting
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : const Icon(Icons.send),
-                  label: Text(
-                    _isSubmitting ? 'Dispatching...' : 'Dispatch Vehicle',
+
+                // ── Submit button ──────────────────────────────────────────
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFB71C1C),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    icon: _isSubmitting
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Icon(Icons.send),
+                    label: Text(
+                      _isSubmitting ? 'Dispatching...' : 'Dispatch Vehicle',
+                    ),
+                    onPressed: _isSubmitting ? null : _submit,
                   ),
-                  onPressed: _isSubmitting ? null : _submit,
                 ),
-              ),
-              const SizedBox(height: 8),
-            ],
+                const SizedBox(height: 8),
+              ],
+            ),
           ),
         ),
       ),
@@ -274,6 +267,13 @@ class _IncidentFormState extends ConsumerState<IncidentForm> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_latitude == null || _longitude == null) {
+      setState(() {
+        _success = false;
+        _resultMessage = 'Search for and select an incident address.';
+      });
+      return;
+    }
 
     setState(() {
       _isSubmitting = true;
@@ -284,12 +284,25 @@ class _IncidentFormState extends ConsumerState<IncidentForm> {
       final client = ref.read(clientProvider);
       final incident = Incident(
         description: _descriptionController.text.trim(),
-        latitude: _parseCoordinate(_latController.text),
-        longitude: _parseCoordinate(_lonController.text),
+        address: _addressController.text.trim(),
+        latitude: _latitude!,
+        longitude: _longitude!,
         status: 'open',
         sectorId: 'CITY_SAO_PAULO',
+        requestedServices: [
+          if (_requestPolice) 'police',
+          if (_requestFirefighters) 'firefighters',
+        ].join(','),
         createdAt: DateTime.now(),
       );
+      if (!_requestPolice && !_requestFirefighters) {
+        setState(() {
+          _success = false;
+          _resultMessage = 'Select at least one responding service.';
+          _isSubmitting = false;
+        });
+        return;
+      }
 
       final result = await client.dispatch.requestDispatch(incident);
       if (result.success) ref.invalidate(activeIncidentsProvider);
@@ -333,8 +346,9 @@ class _IncidentFormState extends ConsumerState<IncidentForm> {
 
     try {
       final uri = Uri.https('nominatim.openstreetmap.org', '/search', {
-        'q': '$address, São Paulo, SP, Brasil',
+        'q': address,
         'countrycodes': 'br',
+        'viewbox': '-46.85,-23.35,-46.36,-24.00',
         'format': 'jsonv2',
         'limit': '5',
         'accept-language': 'pt-BR',
@@ -406,11 +420,10 @@ class _IncidentFormState extends ConsumerState<IncidentForm> {
 
       if (!mounted || selected == null) return;
       setState(() {
-        _latController.text = selected.latitude.toString();
-        _lonController.text = selected.longitude.toString();
+        _latitude = selected.latitude;
+        _longitude = selected.longitude;
         _success = true;
-        _resultMessage =
-            'Destination set: ${selected.latitude.toStringAsFixed(5)}, ${selected.longitude.toStringAsFixed(5)}';
+        _resultMessage = 'Destination set: ${selected.displayName}';
       });
     } on FormatException catch (error) {
       if (!mounted) return;
@@ -463,19 +476,6 @@ class _IncidentFormState extends ConsumerState<IncidentForm> {
     ),
     contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
   );
-
-  String? _validateDouble(String? value, String field) {
-    if (value == null || value.trim().isEmpty) {
-      return 'Search an address or enter coordinates';
-    }
-    if (_parseCoordinateOrNull(value) == null) return 'Invalid $field';
-    return null;
-  }
-
-  double _parseCoordinate(String value) => _parseCoordinateOrNull(value)!;
-
-  double? _parseCoordinateOrNull(String value) =>
-      double.tryParse(value.trim().replaceAll(',', '.'));
 }
 
 class _AddressSearchResult {

@@ -54,8 +54,14 @@ class SimulationTask {
             v.status.equals('returning') |
             v.status.equals('repositioning'),
       );
+      final movingFireVehicles = await FireVehicle.db.find(
+        session,
+        where: (vehicle) =>
+            vehicle.status.equals('dispatched') |
+            vehicle.status.equals('returning'),
+      );
 
-      if (movingVehicles.isEmpty) {
+      if (movingVehicles.isEmpty && movingFireVehicles.isEmpty) {
         await session.close();
         return;
       }
@@ -93,6 +99,36 @@ class SimulationTask {
         }
 
         await Vehicle.db.updateRow(session, vehicle);
+        anyUpdated = true;
+      }
+
+      for (final vehicle in movingFireVehicles) {
+        if (vehicle.targetLatitude == null || vehicle.targetLongitude == null) {
+          continue;
+        }
+
+        final dLat = vehicle.targetLatitude! - vehicle.latitude;
+        final dLon = vehicle.targetLongitude! - vehicle.longitude;
+        if (dLat.abs() < _arrivalThreshold && dLon.abs() < _arrivalThreshold) {
+          vehicle
+            ..latitude = vehicle.targetLatitude!
+            ..longitude = vehicle.targetLongitude!;
+          if (vehicle.status == 'dispatched') {
+            vehicle.status = 'on_scene';
+          } else {
+            vehicle
+              ..status = 'available'
+              ..targetLatitude = null
+              ..targetLongitude = null
+              ..assignedIncidentId = null;
+          }
+        } else {
+          vehicle
+            ..latitude += dLat * 0.05
+            ..longitude += dLon * 0.05;
+        }
+
+        await FireVehicle.db.updateRow(session, vehicle);
         anyUpdated = true;
       }
 

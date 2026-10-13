@@ -38,6 +38,16 @@ class DispatchEndpoint extends Endpoint {
     }
   }
 
+  Stream<List<FireVehicle>> monitorFireVehicles(Session session) async* {
+    final channel = session.messages.createStream<MapUpdateMessage>(
+      'map-update',
+    );
+    yield await FireVehicle.db.find(session);
+    await for (final _ in channel) {
+      yield await FireVehicle.db.find(session);
+    }
+  }
+
   /// Streams sector coverage data (sectorCode → availableVehicleCount).
   /// The dashboard uses this to colour-code sector polygons on the map.
   Stream<Map<String, int>> monitorSectorCoverage(Session session) async* {
@@ -62,26 +72,157 @@ class DispatchEndpoint extends Endpoint {
     Session session,
     Incident incident,
   ) async {
-    final available = await Vehicle.db.find(
-      session,
-      where: (v) =>
-          v.status.equals('available') | v.status.equals('repositioning'),
-    );
-
-    if (available.isEmpty) {
+    final boundary = await MunicipalCoveragePlanner.readBoundaryGeoJson();
+    if (!MunicipalCoveragePlanner.isWithinMunicipality(boundary, (
+      latitude: incident.latitude,
+      longitude: incident.longitude,
+    ))) {
       return DispatchResult(
         success: false,
-        message: 'No vehicles currently available. All units are dispatched.',
+        message:
+            'This address is outside São Paulo. This MVP dashboard manages only São Paulo city.',
         assignedVehicleCode: null,
+        assignedFireVehicleCodes: null,
         estimatedArrivalSeconds: null,
       );
     }
 
-    final boundary = await MunicipalCoveragePlanner.readBoundaryGeoJson();
-    final coverageSamples = MunicipalCoveragePlanner.sampleMunicipality(
-      boundary,
+    final requestedServices = (incident.requestedServices ?? 'police')
+        .split(',')
+        .map((service) => service.trim())
+        .where((service) => service.isNotEmpty)
+        .toSet();
+    if (requestedServices.isEmpty ||
+        requestedServices.any(
+          (service) => service != 'police' && service != 'firefighters',
+        )) {
+      throw ArgumentError.value(
+        incident.requestedServices,
+        'requestedServices',
+        'Select police, firefighters, or both.',
+      );
+    }
+    final requestsPolice = requestedServices.contains('police');
+    final requestsFirefighters = requestedServices.contains('firefighters');
+
+    Vehicle? policeVehicle;
+    if (requestsPolice) {
+      final available = await Vehicle.db.find(
+        session,
+        where: (v) =>
+            v.status.equals('available') | v.status.equals('repositioning'),
+      );
+      if (available.isNotEmpty) {
+        policeVehicle = await _selectPoliceVehicle(
+          session,
+          incident,
+          available,
+        );
+      }
+    }
+
+    List<FireVehicle> fireVehicles = [];
+    if (requestsFirefighters) {
+      final fireVehicle = await _selectFireResponseVehicle(session, incident);
+      if (fireVehicle != null) fireVehicles = [fireVehicle];
+    }
+
+    if ((requestsPolice && policeVehicle == null) ||
+        (requestsFirefighters && fireVehicles.isEmpty)) {
+      final unavailableServices = <String>[
+        if (requestsPolice && policeVehicle == null) 'police',
+        if (requestsFirefighters && fireVehicles.isEmpty) 'firefighters',
+      ];
+      return DispatchResult(
+        success: false,
+        message:
+            'Not enough available units for: ${unavailableServices.join(' and ')}. No unit was dispatched.',
+        assignedVehicleCode: null,
+        assignedFireVehicleCodes: null,
+        estimatedArrivalSeconds: null,
+      );
+    }
+
+    incident
+      ..status = 'dispatched'
+      ..sectorId = CoverageChecker.municipalityCode
+      ..requestedServices = requestedServices.join(',')
+      ..assignedVehicleId = policeVehicle?.id
+      ..assignedFireVehicleOneId = fireVehicles.isEmpty
+          ? null
+          : fireVehicles[0].id
+      ..assignedFireVehicleTwoId = null;
+    await Incident.db.insertRow(session, incident);
+
+    if (policeVehicle != null) {
+      policeVehicle
+        ..status = 'dispatched'
+        ..targetLatitude = incident.latitude
+        ..targetLongitude = incident.longitude
+        ..patrolLatitude ??= policeVehicle.latitude
+        ..patrolLongitude ??= policeVehicle.longitude
+        ..assignedIncidentId = incident.id;
+      await Vehicle.db.updateRow(session, policeVehicle);
+      await _rebalancePatrolFleet(session);
+    }
+
+    for (final vehicle in fireVehicles) {
+      vehicle
+        ..status = 'dispatched'
+        ..targetLatitude = incident.latitude
+        ..targetLongitude = incident.longitude
+        ..assignedIncidentId = incident.id;
+      await FireVehicle.db.updateRow(session, vehicle);
+    }
+
+    // Notify all connected dashboards that the map has changed
+    session.messages.postMessage(
+      'map-update',
+      MapUpdateMessage(reason: 'dispatch'),
     );
 
+    final responseCodes = <String>[
+      if (policeVehicle != null) 'Police ${policeVehicle.code}',
+      if (fireVehicles.isNotEmpty)
+        'Fire ${fireVehicles.map((vehicle) => vehicle.code).join(', ')}',
+    ];
+    final responseDistances = <double>[
+      if (policeVehicle != null)
+        HaversineCalculator.distanceKm(
+          incident.latitude,
+          incident.longitude,
+          policeVehicle.latitude,
+          policeVehicle.longitude,
+        ),
+      ...fireVehicles.map(
+        (vehicle) => HaversineCalculator.distanceKm(
+          incident.latitude,
+          incident.longitude,
+          vehicle.latitude,
+          vehicle.longitude,
+        ),
+      ),
+    ];
+    final eta = responseDistances
+        .map(HaversineCalculator.estimatedTravelSeconds)
+        .reduce((first, second) => first < second ? first : second);
+
+    return DispatchResult(
+      success: true,
+      message: '${responseCodes.join(' and ')} dispatched.',
+      assignedVehicleCode: policeVehicle?.code,
+      assignedFireVehicleCodes: fireVehicles.isEmpty
+          ? null
+          : fireVehicles.map((vehicle) => vehicle.code).join(', '),
+      estimatedArrivalSeconds: eta,
+    );
+  }
+
+  Future<Vehicle> _selectPoliceVehicle(
+    Session _,
+    Incident incident,
+    List<Vehicle> available,
+  ) async {
     double distanceToIncident(Vehicle vehicle) =>
         HaversineCalculator.distanceKm(
           incident.latitude,
@@ -90,72 +231,45 @@ class DispatchEndpoint extends Endpoint {
           vehicle.longitude,
         );
 
-    final coverageAfterDispatch = <String, double>{};
-    for (final candidate in available) {
-      final remainingPositions = available
-          .where((vehicle) => vehicle.id != candidate.id)
-          .map(
-            (vehicle) =>
-                (latitude: vehicle.latitude, longitude: vehicle.longitude),
-          )
-          .toList();
-      coverageAfterDispatch[candidate.code] =
-          MunicipalCoveragePlanner.maximumCoverageDistanceKm(
-            coverageSamples,
-            remainingPositions,
-          );
-    }
-
-    available.sort((a, b) {
-      final coverageComparison = coverageAfterDispatch[a.code]!.compareTo(
-        coverageAfterDispatch[b.code]!,
-      );
-      if (coverageComparison != 0) return coverageComparison;
-      return distanceToIncident(a).compareTo(distanceToIncident(b));
-    });
-    final vehicleToDispatch = available.first;
-
-    // ── Commit the dispatch ───────────────────────────────────────────────────
-    vehicleToDispatch
-      ..status = 'dispatched'
-      ..targetLatitude = incident.latitude
-      ..targetLongitude = incident.longitude
-      ..patrolLatitude ??= vehicleToDispatch.latitude
-      ..patrolLongitude ??= vehicleToDispatch.longitude
-      ..assignedIncidentId = incident.id;
-
-    // Save the incident with the assigned vehicle
-    incident
-      ..status = 'dispatched'
-      ..sectorId = CoverageChecker.municipalityCode
-      ..assignedVehicleId = vehicleToDispatch.id;
-
-    await Incident.db.insertRow(session, incident);
-    vehicleToDispatch.assignedIncidentId = incident.id;
-    await Vehicle.db.updateRow(session, vehicleToDispatch);
-    await _rebalancePatrolFleet(session);
-
-    // Notify all connected dashboards that the map has changed
-    session.messages.postMessage(
-      'map-update',
-      MapUpdateMessage(reason: 'dispatch'),
+    available.sort(
+      (first, second) =>
+          distanceToIncident(first).compareTo(distanceToIncident(second)),
     );
-
-    final distance = HaversineCalculator.distanceKm(
-      incident.latitude,
-      incident.longitude,
-      vehicleToDispatch.latitude,
-      vehicleToDispatch.longitude,
-    );
-    final eta = HaversineCalculator.estimatedTravelSeconds(distance);
-
-    return DispatchResult(
-      success: true,
-      message: 'Vehicle ${vehicleToDispatch.code} dispatched successfully.',
-      assignedVehicleCode: vehicleToDispatch.code,
-      estimatedArrivalSeconds: eta,
-    );
+    return available.first;
   }
+
+  Future<FireVehicle?> _selectFireResponseVehicle(
+    Session session,
+    Incident incident,
+  ) async {
+    final available = await FireVehicle.db.find(
+      session,
+      where: (vehicle) => vehicle.status.equals('available'),
+    );
+    if (available.isEmpty) return null;
+    available.sort(
+      (first, second) =>
+          _distanceToIncident(
+            incident,
+            first.latitude,
+            first.longitude,
+          ).compareTo(
+            _distanceToIncident(incident, second.latitude, second.longitude),
+          ),
+    );
+    return available.first;
+  }
+
+  double _distanceToIncident(
+    Incident incident,
+    double latitude,
+    double longitude,
+  ) => HaversineCalculator.distanceKm(
+    incident.latitude,
+    incident.longitude,
+    latitude,
+    longitude,
+  );
 
   // ─── Fleet management helpers ────────────────────────────────────────────────
 
@@ -173,6 +287,9 @@ class DispatchEndpoint extends Endpoint {
       ),
     ];
   }
+
+  Future<List<FireStation>> getAllFireStations(Session session) =>
+      FireStation.db.find(session, orderBy: (station) => station.stationCode);
 
   /// Returns all incidents with the given [status].
   /// Valid values: 'open', 'dispatched', 'closed'.
@@ -225,25 +342,101 @@ class DispatchEndpoint extends Endpoint {
       ..patrolLongitude = returnLongitude
       ..currentSector = CoverageChecker.municipalityCode;
 
-    // Close the associated incident if one exists
     final incidents = await Incident.db.find(
       session,
       where: (i) =>
           i.assignedVehicleId.equals(vehicleId) & i.status.notEquals('closed'),
     );
+    await Vehicle.db.updateRow(session, vehicle);
     for (final incident in incidents) {
-      incident
-        ..status = 'closed'
-        ..closedAt = DateTime.now();
-      await Incident.db.updateRow(session, incident);
+      await _closeIncidentWhenResponsesComplete(session, incident);
     }
-
     await _rebalancePatrolFleet(session, returningVehicle: vehicle);
 
     session.messages.postMessage(
       'map-update',
       MapUpdateMessage(reason: 'vehicle-returning'),
     );
+  }
+
+  Future<void> completeFireIncident(Session session, int fireVehicleId) async {
+    final vehicles = await FireVehicle.db.find(
+      session,
+      where: (vehicle) => vehicle.id.equals(fireVehicleId),
+    );
+    if (vehicles.isEmpty) return;
+
+    final vehicle = vehicles.first;
+    if (vehicle.status != 'on_scene') {
+      throw Exception('Only a fire unit on scene can complete its incident.');
+    }
+    final stations = await FireStation.db.find(
+      session,
+      where: (station) => station.stationCode.equals(vehicle.stationCode),
+    );
+    if (stations.isEmpty) {
+      throw StateError('Fire station ${vehicle.stationCode} was not found.');
+    }
+    final station = stations.first;
+    vehicle
+      ..status = 'returning'
+      ..targetLatitude = station.latitude
+      ..targetLongitude = station.longitude;
+    await FireVehicle.db.updateRow(session, vehicle);
+
+    final incidents = await Incident.db.find(
+      session,
+      where: (incident) =>
+          (incident.assignedFireVehicleOneId.equals(fireVehicleId) |
+              incident.assignedFireVehicleTwoId.equals(fireVehicleId)) &
+          incident.status.notEquals('closed'),
+    );
+    for (final incident in incidents) {
+      await _closeIncidentWhenResponsesComplete(session, incident);
+    }
+    session.messages.postMessage(
+      'map-update',
+      MapUpdateMessage(reason: 'fire-vehicle-returning'),
+    );
+  }
+
+  Future<void> _closeIncidentWhenResponsesComplete(
+    Session session,
+    Incident incident,
+  ) async {
+    final policeId = incident.assignedVehicleId;
+    if (policeId != null) {
+      final policeVehicles = await Vehicle.db.find(
+        session,
+        where: (vehicle) => vehicle.id.equals(policeId),
+      );
+      if (policeVehicles.isNotEmpty &&
+          (policeVehicles.first.status == 'dispatched' ||
+              policeVehicles.first.status == 'on_scene')) {
+        return;
+      }
+    }
+
+    final fireIds = [
+      incident.assignedFireVehicleOneId,
+      incident.assignedFireVehicleTwoId,
+    ].whereType<int>();
+    for (final fireId in fireIds) {
+      final fireVehicles = await FireVehicle.db.find(
+        session,
+        where: (vehicle) => vehicle.id.equals(fireId),
+      );
+      if (fireVehicles.isNotEmpty &&
+          (fireVehicles.first.status == 'dispatched' ||
+              fireVehicles.first.status == 'on_scene')) {
+        return;
+      }
+    }
+
+    incident
+      ..status = 'closed'
+      ..closedAt = DateTime.now();
+    await Incident.db.updateRow(session, incident);
   }
 
   Future<void> _rebalancePatrolFleet(

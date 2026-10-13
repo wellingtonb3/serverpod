@@ -20,6 +20,7 @@ abstract class DispatchResult
     required this.success,
     required this.message,
     this.assignedVehicleCode,
+    this.assignedFireVehicleCodes,
     this.estimatedArrivalSeconds,
   });
 
@@ -27,6 +28,7 @@ abstract class DispatchResult
     required bool success,
     required String message,
     String? assignedVehicleCode,
+    String? assignedFireVehicleCodes,
     int? estimatedArrivalSeconds,
   }) = _DispatchResultImpl;
 
@@ -35,6 +37,8 @@ abstract class DispatchResult
       success: _isc.BoolJsonExtension.fromJson(jsonSerialization['success']),
       message: jsonSerialization['message'] as String,
       assignedVehicleCode: jsonSerialization['assignedVehicleCode'] as String?,
+      assignedFireVehicleCodes:
+          jsonSerialization['assignedFireVehicleCodes'] as String?,
       estimatedArrivalSeconds:
           jsonSerialization['estimatedArrivalSeconds'] as int?,
     );
@@ -46,6 +50,8 @@ abstract class DispatchResult
 
   String? assignedVehicleCode;
 
+  String? assignedFireVehicleCodes;
+
   int? estimatedArrivalSeconds;
 
   /// Returns a shallow copy of this [DispatchResult]
@@ -55,6 +61,7 @@ abstract class DispatchResult
     bool? success,
     String? message,
     String? assignedVehicleCode,
+    String? assignedFireVehicleCodes,
     int? estimatedArrivalSeconds,
   });
   @override
@@ -65,6 +72,8 @@ abstract class DispatchResult
       'message': message,
       if (assignedVehicleCode != null)
         'assignedVehicleCode': assignedVehicleCode,
+      if (assignedFireVehicleCodes != null)
+        'assignedFireVehicleCodes': assignedFireVehicleCodes,
       if (estimatedArrivalSeconds != null)
         'estimatedArrivalSeconds': estimatedArrivalSeconds,
     };
@@ -78,6 +87,8 @@ abstract class DispatchResult
       'message': message,
       if (assignedVehicleCode != null)
         'assignedVehicleCode': assignedVehicleCode,
+      if (assignedFireVehicleCodes != null)
+        'assignedFireVehicleCodes': assignedFireVehicleCodes,
       if (estimatedArrivalSeconds != null)
         'estimatedArrivalSeconds': estimatedArrivalSeconds,
     };
@@ -96,11 +107,13 @@ class _DispatchResultImpl extends DispatchResult {
     required bool success,
     required String message,
     String? assignedVehicleCode,
+    String? assignedFireVehicleCodes,
     int? estimatedArrivalSeconds,
   }) : super._(
           success: success,
           message: message,
           assignedVehicleCode: assignedVehicleCode,
+          assignedFireVehicleCodes: assignedFireVehicleCodes,
           estimatedArrivalSeconds: estimatedArrivalSeconds,
         );
 
@@ -112,6 +125,7 @@ class _DispatchResultImpl extends DispatchResult {
     bool? success,
     String? message,
     Object? assignedVehicleCode = _Undefined,
+    Object? assignedFireVehicleCodes = _Undefined,
     Object? estimatedArrivalSeconds = _Undefined,
   }) {
     return DispatchResult(
@@ -120,6 +134,9 @@ class _DispatchResultImpl extends DispatchResult {
       assignedVehicleCode: assignedVehicleCode is String?
           ? assignedVehicleCode
           : this.assignedVehicleCode,
+      assignedFireVehicleCodes: assignedFireVehicleCodes is String?
+          ? assignedFireVehicleCodes
+          : this.assignedFireVehicleCodes,
       estimatedArrivalSeconds: estimatedArrivalSeconds is int?
           ? estimatedArrivalSeconds
           : this.estimatedArrivalSeconds,

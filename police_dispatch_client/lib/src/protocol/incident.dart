@@ -13,17 +13,21 @@
 import 'package:serverpod_client/serverpod_client.dart' as _isc;
 
 /// Incident model
-/// Represents a police call/incident requiring a patrol vehicle.
+/// Represents an emergency call requiring police, firefighters, or both.
 abstract class Incident
     implements _isc.SerializableModel, _isc.ProtocolSerialization {
   Incident._({
     this.id,
     required this.description,
+    this.address,
     required this.latitude,
     required this.longitude,
     required this.status,
     required this.sectorId,
+    this.requestedServices,
     this.assignedVehicleId,
+    this.assignedFireVehicleOneId,
+    this.assignedFireVehicleTwoId,
     required this.createdAt,
     this.closedAt,
   });
@@ -31,11 +35,15 @@ abstract class Incident
   factory Incident({
     int? id,
     required String description,
+    String? address,
     required double latitude,
     required double longitude,
     required String status,
     required String sectorId,
+    String? requestedServices,
     int? assignedVehicleId,
+    int? assignedFireVehicleOneId,
+    int? assignedFireVehicleTwoId,
     required DateTime createdAt,
     DateTime? closedAt,
   }) = _IncidentImpl;
@@ -44,11 +52,17 @@ abstract class Incident
     return Incident(
       id: jsonSerialization['id'] as int?,
       description: jsonSerialization['description'] as String,
+      address: jsonSerialization['address'] as String?,
       latitude: (jsonSerialization['latitude'] as num).toDouble(),
       longitude: (jsonSerialization['longitude'] as num).toDouble(),
       status: jsonSerialization['status'] as String,
       sectorId: jsonSerialization['sectorId'] as String,
+      requestedServices: jsonSerialization['requestedServices'] as String?,
       assignedVehicleId: jsonSerialization['assignedVehicleId'] as int?,
+      assignedFireVehicleOneId:
+          jsonSerialization['assignedFireVehicleOneId'] as int?,
+      assignedFireVehicleTwoId:
+          jsonSerialization['assignedFireVehicleTwoId'] as int?,
       createdAt:
           _isc.DateTimeJsonExtension.fromJson(jsonSerialization['createdAt']),
       closedAt: jsonSerialization['closedAt'] == null
@@ -64,6 +78,8 @@ abstract class Incident
 
   String description;
 
+  String? address;
+
   double latitude;
 
   double longitude;
@@ -72,7 +88,13 @@ abstract class Incident
 
   String sectorId;
 
+  String? requestedServices;
+
   int? assignedVehicleId;
+
+  int? assignedFireVehicleOneId;
+
+  int? assignedFireVehicleTwoId;
 
   DateTime createdAt;
 
@@ -84,11 +106,15 @@ abstract class Incident
   Incident copyWith({
     int? id,
     String? description,
+    String? address,
     double? latitude,
     double? longitude,
     String? status,
     String? sectorId,
+    String? requestedServices,
     int? assignedVehicleId,
+    int? assignedFireVehicleOneId,
+    int? assignedFireVehicleTwoId,
     DateTime? createdAt,
     DateTime? closedAt,
   });
@@ -98,11 +124,17 @@ abstract class Incident
       '__className__': 'Incident',
       if (id != null) 'id': id,
       'description': description,
+      if (address != null) 'address': address,
       'latitude': latitude,
       'longitude': longitude,
       'status': status,
       'sectorId': sectorId,
+      if (requestedServices != null) 'requestedServices': requestedServices,
       if (assignedVehicleId != null) 'assignedVehicleId': assignedVehicleId,
+      if (assignedFireVehicleOneId != null)
+        'assignedFireVehicleOneId': assignedFireVehicleOneId,
+      if (assignedFireVehicleTwoId != null)
+        'assignedFireVehicleTwoId': assignedFireVehicleTwoId,
       'createdAt': createdAt.toJson(),
       if (closedAt != null) 'closedAt': closedAt?.toJson(),
     };
@@ -114,11 +146,17 @@ abstract class Incident
       '__className__': 'Incident',
       if (id != null) 'id': id,
       'description': description,
+      if (address != null) 'address': address,
       'latitude': latitude,
       'longitude': longitude,
       'status': status,
       'sectorId': sectorId,
+      if (requestedServices != null) 'requestedServices': requestedServices,
       if (assignedVehicleId != null) 'assignedVehicleId': assignedVehicleId,
+      if (assignedFireVehicleOneId != null)
+        'assignedFireVehicleOneId': assignedFireVehicleOneId,
+      if (assignedFireVehicleTwoId != null)
+        'assignedFireVehicleTwoId': assignedFireVehicleTwoId,
       'createdAt': createdAt.toJson(),
       if (closedAt != null) 'closedAt': closedAt?.toJson(),
     };
@@ -136,21 +174,29 @@ class _IncidentImpl extends Incident {
   _IncidentImpl({
     int? id,
     required String description,
+    String? address,
     required double latitude,
     required double longitude,
     required String status,
     required String sectorId,
+    String? requestedServices,
     int? assignedVehicleId,
+    int? assignedFireVehicleOneId,
+    int? assignedFireVehicleTwoId,
     required DateTime createdAt,
     DateTime? closedAt,
   }) : super._(
           id: id,
           description: description,
+          address: address,
           latitude: latitude,
           longitude: longitude,
           status: status,
           sectorId: sectorId,
+          requestedServices: requestedServices,
           assignedVehicleId: assignedVehicleId,
+          assignedFireVehicleOneId: assignedFireVehicleOneId,
+          assignedFireVehicleTwoId: assignedFireVehicleTwoId,
           createdAt: createdAt,
           closedAt: closedAt,
         );
@@ -162,24 +208,38 @@ class _IncidentImpl extends Incident {
   Incident copyWith({
     Object? id = _Undefined,
     String? description,
+    Object? address = _Undefined,
     double? latitude,
     double? longitude,
     String? status,
     String? sectorId,
+    Object? requestedServices = _Undefined,
     Object? assignedVehicleId = _Undefined,
+    Object? assignedFireVehicleOneId = _Undefined,
+    Object? assignedFireVehicleTwoId = _Undefined,
     DateTime? createdAt,
     Object? closedAt = _Undefined,
   }) {
     return Incident(
       id: id is int? ? id : this.id,
       description: description ?? this.description,
+      address: address is String? ? address : this.address,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
       status: status ?? this.status,
       sectorId: sectorId ?? this.sectorId,
+      requestedServices: requestedServices is String?
+          ? requestedServices
+          : this.requestedServices,
       assignedVehicleId: assignedVehicleId is int?
           ? assignedVehicleId
           : this.assignedVehicleId,
+      assignedFireVehicleOneId: assignedFireVehicleOneId is int?
+          ? assignedFireVehicleOneId
+          : this.assignedFireVehicleOneId,
+      assignedFireVehicleTwoId: assignedFireVehicleTwoId is int?
+          ? assignedFireVehicleTwoId
+          : this.assignedFireVehicleTwoId,
       createdAt: createdAt ?? this.createdAt,
       closedAt: closedAt is DateTime? ? closedAt : this.closedAt,
     );
